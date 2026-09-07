@@ -1,0 +1,16 @@
+# Build-Ausgaben
+bin/
+obj/
+dist/
+*.user
+.vs/
+
+# Temporäre WPF-Projektdateien (entstehen beim Build)
+*_wpftmp.csproj
+
+# Lokale Artefakte
+*.log
+release/
+
+# Ausnahme: die native SimConnect-Bibliothek gehört ins Repo (wird zum Bauen gebraucht)
+!libs/simconnect/SimConnect.dll

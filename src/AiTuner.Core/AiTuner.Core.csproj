@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Management" Version="8.0.0" />
+    <PackageReference Include="NvAPIWrapper.Net" Version="0.8.1.101" />
+    <PackageReference Include="System.ServiceProcess.ServiceController" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Rules\rules.json" />
+    <EmbeddedResource Include="Settings\settings-catalog.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Native SimConnect-Client-DLL (P/Invoke). Die MANAGED Microsoft.FlightSimulator.SimConnect.dll
+         ist Mixed-Mode-C++/CLI für .NET Framework und unter .NET 8 NICHT ladbar (BadImageFormat) —
+         deshalb sprechen wir die C-API direkt an. ExcludeFromSingleFile: muss als lose Datei neben
+         der Single-File-EXE liegen. -->
+    <Content Include="..\..\libs\simconnect\SimConnect.dll" Link="SimConnect.dll"
+             CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+  </ItemGroup>
+
+</Project>

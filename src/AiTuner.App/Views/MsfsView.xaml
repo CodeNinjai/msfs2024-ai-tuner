@@ -1,0 +1,57 @@
+<UserControl
+    x:Class="AiTuner.App.Views.MsfsView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    xmlns:controls="clr-namespace:AiTuner.App.Controls">
+    <Grid>
+    <Border Height="200" VerticalAlignment="Top" IsHitTestVisible="False">
+        <Border.Background>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                <GradientStop Color="#1C4CC2FF" Offset="0" />
+                <GradientStop Color="#00000000" Offset="1" />
+            </LinearGradientBrush>
+        </Border.Background>
+    </Border>
+    <Grid Margin="28,12,20,0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0">
+            <controls:PageHeader Title="MSFS 2024 — Einstellungen" Subtitle="{Binding MsfsSummary}"
+                                 IconKey="IconPlane" TileBg="#334CC2FF" TileFg="#FF4CC2FF" />
+            <TextBlock Text="Geänderte Werte wirken beim nächsten Start von MSFS. Vor der ersten Änderung wurde automatisch ein Backup angelegt."
+                       FontSize="12" Foreground="{StaticResource BrushWarn}" Margin="0,6,0,0"
+                       Visibility="{Binding MsfsPendingRestart, Converter={StaticResource BoolToVis}}" /></StackPanel>
+
+        <Grid Grid.Row="1" Margin="0,16,8,4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0" Orientation="Horizontal">
+                <ComboBox MinWidth="190"
+                          ItemsSource="{Binding Installations}"
+                          SelectedItem="{Binding SelectedInstallation}"
+                          DisplayMemberPath="EditionName" />
+                <CheckBox Content="VR ausblenden" IsChecked="{Binding HideVrSettings}"
+                          VerticalAlignment="Center" Margin="16,0,0,0"
+                          Foreground="{StaticResource BrushTextSecondary}" FontSize="12" />
+                <CheckBox Content="Nur änderbare" IsChecked="{Binding ShowOnlyEditable}"
+                          VerticalAlignment="Center" Margin="12,0,0,0"
+                          Foreground="{StaticResource BrushTextSecondary}" FontSize="12" />
+            </StackPanel>
+            <ui:TextBox Grid.Column="2" Width="280" PlaceholderText="Einstellungen filtern …"
+                        Text="{Binding MsfsFilter, UpdateSourceTrigger=PropertyChanged}" />
+        </Grid>
+
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Padding="0,0,8,0">
+            <ItemsControl ItemsSource="{Binding MsfsRows}" Margin="0,0,0,24" />
+        </ScrollViewer>
+    </Grid>
+    </Grid>
+</UserControl>

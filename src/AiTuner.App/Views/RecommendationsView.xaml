@@ -1,0 +1,130 @@
+<UserControl
+    x:Class="AiTuner.App.Views.RecommendationsView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="clr-namespace:AiTuner.App.ViewModels"
+    xmlns:controls="clr-namespace:AiTuner.App.Controls">
+    <Grid>
+    <Border Height="200" VerticalAlignment="Top" IsHitTestVisible="False">
+        <Border.Background>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                <GradientStop Color="#1C4CC2FF" Offset="0" />
+                <GradientStop Color="#00000000" Offset="1" />
+            </LinearGradientBrush>
+        </Border.Background>
+    </Border>
+    <Grid Margin="28,12,20,0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <controls:PageHeader Grid.Row="0" Title="Empfehlungen" Subtitle="{Binding RecommendationSummary}"
+                             IconKey="IconLightbulb" TileBg="#334CC2FF" TileFg="#FF4CC2FF" />
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,8,2">
+            <TextBlock Text="{Binding RulesetStatus}" VerticalAlignment="Center" FontSize="11"
+                       Foreground="{StaticResource BrushTextTertiary}" Margin="0,0,10,0" />
+            <Button Content="Regelwerk exportieren …" FontSize="12" Padding="10,4"
+                    ToolTip="Speichert das aktive Regelwerk als JSON — zum Teilen mit der Community oder als eigene Basis."
+                    Command="{Binding ExportRulesCommand}" />
+            <Button Content="Importieren …" FontSize="12" Padding="10,4" Margin="8,0,0,0"
+                    ToolTip="Lädt ein Community-Regelwerk (rules.json). Es überschreibt das eingebettete Regelwerk, bis es zurückgesetzt wird."
+                    Command="{Binding ImportRulesCommand}" />
+            <Button Content="Zurücksetzen" FontSize="12" Padding="10,4" Margin="8,0,0,0"
+                    ToolTip="Entfernt das importierte Regelwerk und kehrt zum eingebauten zurück."
+                    Visibility="{Binding HasRulesOverride, Converter={StaticResource BoolToVis}}"
+                    Command="{Binding ResetRulesCommand}" />
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Padding="0,8,8,0">
+            <ItemsControl ItemsSource="{Binding RecommendationRows}" Margin="0,0,0,24">
+                <ItemsControl.Resources>
+                    <DataTemplate DataType="{x:Type vm:RecommendationRow}">
+                        <Border Style="{StaticResource CardStyle}" Margin="0,0,0,10" Padding="0">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="4" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Rectangle Grid.Column="0" RadiusX="2" RadiusY="2" Margin="0,6,0,6">
+                                    <Rectangle.Style>
+                                        <Style TargetType="Rectangle">
+                                            <Setter Property="Fill" Value="{StaticResource BrushAccent}" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding SeverityLabel}" Value="Hoch">
+                                                    <Setter Property="Fill" Value="{StaticResource BrushBad}" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding SeverityLabel}" Value="Mittel">
+                                                    <Setter Property="Fill" Value="{StaticResource BrushWarn}" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Rectangle.Style>
+                                </Rectangle>
+                                <StackPanel Grid.Column="1" Margin="16,12,18,12">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding Category}" FontSize="11" FontWeight="SemiBold"
+                                                   Foreground="{StaticResource BrushTextTertiary}"
+                                                   VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="SemiBold"
+                                                   Foreground="{StaticResource BrushTextPrimary}"
+                                                   Margin="12,0,0,0" VerticalAlignment="Center"
+                                                   TextWrapping="Wrap" />
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                        <TextBlock Text="{Binding Current}" FontFamily="Consolas" FontSize="12"
+                                                   Foreground="{StaticResource BrushTextSecondary}" TextWrapping="Wrap" />
+                                        <TextBlock Text="  →  " FontFamily="Consolas" FontSize="12"
+                                                   Foreground="{StaticResource BrushTextTertiary}" />
+                                        <TextBlock Text="{Binding Recommended}" FontFamily="Consolas" FontSize="12"
+                                                   FontWeight="Bold" Foreground="{StaticResource BrushOk}" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding Reason}" Style="{StaticResource Subtle}" Margin="0,8,0,0" />
+                                    <TextBlock Text="{Binding ApplyHint}" FontSize="11"
+                                               Foreground="{StaticResource BrushTextTertiary}"
+                                               TextWrapping="Wrap" Margin="0,6,0,0" />
+                                    <Expander Margin="0,10,0,0" IsExpanded="False">
+                                        <Expander.Header>
+                                            <TextBlock Text="Details &amp; Belege" FontSize="12"
+                                                       Foreground="{StaticResource BrushAccent}" />
+                                        </Expander.Header>
+                                        <StackPanel Margin="0,10,0,4">
+                                            <TextBlock Text="{Binding Details}" TextWrapping="Wrap"
+                                                       FontSize="12.5" LineHeight="19"
+                                                       Foreground="{StaticResource BrushTextSecondary}"
+                                                       Visibility="{Binding HasDetails, Converter={StaticResource BoolToVis}}"
+                                                       Margin="0,0,0,10" />
+                                            <TextBlock Text="Ausgelöst durch (Ist-Werte deines Systems):"
+                                                       FontSize="11" FontWeight="SemiBold"
+                                                       Foreground="{StaticResource BrushTextTertiary}" />
+                                            <ItemsControl ItemsSource="{Binding Evidence}" Margin="0,4,0,0">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding}" FontFamily="Consolas" FontSize="11.5"
+                                                                   Foreground="{StaticResource BrushTextSecondary}"
+                                                                   TextWrapping="Wrap" Margin="0,1.5" />
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                            <TextBlock Text="{Binding RuleIdText}" FontSize="10.5"
+                                                       Foreground="{StaticResource BrushTextTertiary}" Margin="0,8,0,0" />
+                                        </StackPanel>
+                                    </Expander>
+                                </StackPanel>
+                                <Button Grid.Column="2" Content="Anwenden" Margin="0,12,16,0"
+                                        VerticalAlignment="Top" MinWidth="96"
+                                        Visibility="{Binding HasAction, Converter={StaticResource BoolToVis}}"
+                                        Command="{Binding DataContext.ApplyRecommendationCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                        CommandParameter="{Binding}" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.Resources>
+            </ItemsControl>
+        </ScrollViewer>
+    </Grid>
+    </Grid>
+</UserControl>

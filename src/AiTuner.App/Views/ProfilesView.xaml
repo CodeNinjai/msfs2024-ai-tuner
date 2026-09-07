@@ -1,0 +1,92 @@
+<UserControl
+    x:Class="AiTuner.App.Views.ProfilesView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    xmlns:controls="clr-namespace:AiTuner.App.Controls">
+    <Grid>
+    <Border Height="200" VerticalAlignment="Top" IsHitTestVisible="False">
+        <Border.Background>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                <GradientStop Color="#1A6CCB5F" Offset="0" />
+                <GradientStop Color="#00000000" Offset="1" />
+            </LinearGradientBrush>
+        </Border.Background>
+    </Border>
+    <Grid Margin="28,12,20,0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <controls:PageHeader Grid.Row="0" Title="Profile &amp; Backups"
+                             Subtitle="Ein Profil sichert Windows-Werte, Energieplan, die komplette UserCfg.opt und das NVIDIA-Treiberprofil — zum Wiederherstellen und für A/B-Tests."
+                             IconKey="IconSave" TileBg="#336CCB5F" TileFg="#FF6CCB5F" />
+
+        <Border Grid.Row="1" Style="{StaticResource CardStyle}" Margin="0,16,8,12">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Button Grid.Column="0" Content="Backup jetzt erstellen"
+                        Command="{Binding CreateBackupCommand}" />
+                <ui:TextBox Grid.Column="1" Margin="16,0,8,0" PlaceholderText="Profilname (z.B. „DLSS Quality Test“)"
+                            Text="{Binding NewProfileName, UpdateSourceTrigger=PropertyChanged}" />
+                <Button Grid.Column="2" Content="Als Profil speichern"
+                        Command="{Binding SaveProfileCommand}" />
+                <Button Grid.Column="3" Content="Ordner öffnen" Margin="8,0,0,0"
+                        Command="{Binding OpenProfilesFolderCommand}" />
+            </Grid>
+        </Border>
+
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Padding="0,0,8,0">
+            <ItemsControl ItemsSource="{Binding Profiles}" Margin="0,0,0,24">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Style="{StaticResource CardStyle}" Margin="0,0,0,8" Padding="16,10">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="70" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Border CornerRadius="4" Padding="6,2" HorizontalAlignment="Left" VerticalAlignment="Center">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Background" Value="#334CC2FF" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsBackup}" Value="True">
+                                                    <Setter Property="Background" Value="#33FFB900" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <TextBlock Text="{Binding TypeLabel}" FontSize="11"
+                                               Foreground="{StaticResource BrushTextPrimary}" />
+                                </Border>
+                                <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold"
+                                               Foreground="{StaticResource BrushTextPrimary}" />
+                                    <TextBlock Text="{Binding CreatedText}" Style="{StaticResource Subtle}" FontSize="11" />
+                                </StackPanel>
+                                <Button Grid.Column="2" Content="Anwenden" MinWidth="96"
+                                        Command="{Binding DataContext.ApplyProfileCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                        CommandParameter="{Binding}" />
+                                <Button Grid.Column="4" Content="Löschen" Margin="8,0,0,0"
+                                        Command="{Binding DataContext.DeleteProfileCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                        CommandParameter="{Binding}" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+    </Grid>
+    </Grid>
+</UserControl>

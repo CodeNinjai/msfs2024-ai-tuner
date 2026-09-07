@@ -1,0 +1,249 @@
+<UserControl
+    x:Class="AiTuner.App.Views.BenchmarkView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    xmlns:controls="clr-namespace:AiTuner.App.Controls">
+    <Grid>
+    <Border Height="200" VerticalAlignment="Top" IsHitTestVisible="False">
+        <Border.Background>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                <GradientStop Color="#1CB39DFF" Offset="0" />
+                <GradientStop Color="#00000000" Offset="1" />
+            </LinearGradientBrush>
+        </Border.Background>
+    </Border>
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="28,4,20,8">
+        <StackPanel Margin="0,8,8,20">
+            <controls:PageHeader Title="Benchmark"
+                                 Subtitle="Frametime-Messung mit Intel PresentMon — für A/B-Vergleiche zwischen Profilen. Messung im laufenden Sim in einer reproduzierbaren Situation starten (gleicher Airport, gleiche Parkposition, gleiches Wetter)."
+                                 IconKey="IconTimer" TileBg="#33B39DFF" TileFg="#FFB39DFF" />
+
+            <Border Style="{StaticResource CardStyle}" Margin="0,16,0,12">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <Viewbox Width="15" Height="15" VerticalAlignment="Center">
+                            <Path Style="{StaticResource LucideIcon}" Data="{StaticResource IconZap}"
+                                  Stroke="{StaticResource BrushAccent}" />
+                        </Viewbox>
+                        <TextBlock Text="PresentMon" FontSize="14" FontWeight="SemiBold"
+                                   Foreground="{StaticResource BrushTextPrimary}" Margin="8,0,0,0" />
+                    </StackPanel>
+                    <TextBlock Text="{Binding PresentMonStatus}" Style="{StaticResource Subtle}" Margin="0,6,0,8" />
+                    <Button Content="PresentMon herunterladen" HorizontalAlignment="Left"
+                            Command="{Binding DownloadPresentMonCommand}" />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,12">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <Viewbox Width="15" Height="15" VerticalAlignment="Center">
+                            <Path Style="{StaticResource LucideIcon}" Data="{StaticResource IconTimer}"
+                                  Stroke="{StaticResource BrushAccent}" />
+                        </Viewbox>
+                        <TextBlock Text="Messung" FontSize="14" FontWeight="SemiBold"
+                                   Foreground="{StaticResource BrushTextPrimary}" Margin="8,0,0,0" />
+                    </StackPanel>
+                    <Grid Margin="0,10,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <ui:TextBox Grid.Column="0" PlaceholderText="Bezeichnung (z.B. „TAA Basis“ oder „DLSS Quality“)"
+                                    Text="{Binding BenchmarkLabel, UpdateSourceTrigger=PropertyChanged}" />
+                        <ComboBox Grid.Column="1" Margin="10,0" MinWidth="90"
+                                  ItemsSource="{Binding Durations}"
+                                  SelectedItem="{Binding SelectedDuration}" />
+                        <Button Grid.Column="2" Content="Messung starten" MinWidth="130"
+                                IsEnabled="{Binding IsBenchmarkRunning, Converter={StaticResource InvBool}}"
+                                Command="{Binding RunBenchmarkCommand}" />
+                    </Grid>
+                    <TextBlock Text="{Binding BenchmarkStatus}" Style="{StaticResource Subtle}" Margin="0,10,0,0" />
+                    <TextBlock Text="Hinweis: PresentMon benötigt Administratorrechte (ETW) — pro Messung erscheint eine UAC-Abfrage."
+                               FontSize="11" Foreground="{StaticResource BrushTextTertiary}" Margin="0,4,0,0" />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,12">
+                <StackPanel>
+                    <Grid>
+                        <StackPanel Orientation="Horizontal">
+                            <Viewbox Width="15" Height="15" VerticalAlignment="Center">
+                                <Path Style="{StaticResource LucideIcon}" Data="{StaticResource IconCpu}"
+                                      Stroke="{StaticResource BrushAccent}" />
+                            </Viewbox>
+                            <TextBlock Text="CPU-Kern-Monitor (MSFS live)" FontSize="14" FontWeight="SemiBold"
+                                       Foreground="{StaticResource BrushTextPrimary}" Margin="8,0,0,0" />
+                        </StackPanel>
+                        <Button HorizontalAlignment="Right" MinWidth="130"
+                                Content="{Binding MonitorButtonText}" Command="{Binding ToggleMonitorCommand}" />
+                    </Grid>
+                    <TextBlock Text="{Binding MonitorStatus}" Style="{StaticResource Subtle}" Margin="0,8,0,0" />
+                    <StackPanel Orientation="Horizontal" Margin="2,12,0,4"
+                                Visibility="{Binding IsMonitorRunning, Converter={StaticResource BoolToVis}}">
+                        <TextBlock Text="{Binding Ccd0Label}" FontSize="11" FontWeight="SemiBold"
+                                   Foreground="{StaticResource BrushAccent}" />
+                        <TextBlock Text="{Binding Ccd1Label}" FontSize="11" FontWeight="SemiBold"
+                                   Foreground="{StaticResource BrushTextTertiary}" Margin="26,0,0,0" />
+                    </StackPanel>
+                    <ItemsControl ItemsSource="{Binding CoreBars}"
+                                  Visibility="{Binding IsMonitorRunning, Converter={StaticResource BoolToVis}}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Margin="{Binding BarMargin}" ToolTip="{Binding Tooltip}">
+                                    <Border Width="13" Height="64" CornerRadius="3" Background="#10FFFFFF">
+                                        <Border VerticalAlignment="Bottom" Height="{Binding BarHeight}" CornerRadius="3">
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="Background" Value="#B34CC2FF" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsFirstCcd}" Value="False">
+                                                            <Setter Property="Background" Value="#80B39DFF" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                        </Border>
+                                    </Border>
+                                    <TextBlock Text="{Binding Index}" FontSize="9" HorizontalAlignment="Center"
+                                               Foreground="{StaticResource BrushTextTertiary}" Margin="0,3,0,0" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,12">
+                <StackPanel>
+                    <TextBlock Text="Ergebnisse — A/B-Vergleich" FontSize="14" FontWeight="SemiBold"
+                               Foreground="{StaticResource BrushTextPrimary}" />
+                    <TextBlock Text="Eine Messung als Baseline markieren — alle anderen zeigen ihre Abweichung in Prozent. Details (Frames, Frametimes) per Hover."
+                               Style="{StaticResource Subtle}" FontSize="11" Margin="0,4,0,0" />
+                    <Grid Margin="0,10,0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="120" />
+                            <ColumnDefinition Width="85" />
+                            <ColumnDefinition Width="70" />
+                            <ColumnDefinition Width="75" />
+                            <ColumnDefinition Width="70" />
+                            <ColumnDefinition Width="75" />
+                            <ColumnDefinition Width="180" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Bezeichnung" FontSize="11" Foreground="{StaticResource BrushTextTertiary}" />
+                        <TextBlock Grid.Column="1" Text="Profil" FontSize="11" Foreground="{StaticResource BrushTextTertiary}" />
+                        <TextBlock Grid.Column="2" Text="Zeit" FontSize="11" Foreground="{StaticResource BrushTextTertiary}" />
+                        <TextBlock Grid.Column="3" Text="Ø FPS" FontSize="11" Foreground="{StaticResource BrushTextTertiary}" TextAlignment="Right" />
+                        <TextBlock Grid.Column="4" Text="Δ" FontSize="11" Foreground="{StaticResource BrushTextTertiary}" TextAlignment="Right" />
+                        <TextBlock Grid.Column="5" Text="1% Low" FontSize="11" Foreground="{StaticResource BrushTextTertiary}" TextAlignment="Right" />
+                        <TextBlock Grid.Column="6" Text="Δ" FontSize="11" Foreground="{StaticResource BrushTextTertiary}" TextAlignment="Right" />
+                    </Grid>
+                    <ItemsControl ItemsSource="{Binding BenchmarkResults}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderBrush="{StaticResource BrushRowBorder}" BorderThickness="0,1,0,0" Padding="0,6"
+                                        ToolTip="{Binding DetailTooltip}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="120" />
+                                            <ColumnDefinition Width="85" />
+                                            <ColumnDefinition Width="70" />
+                                            <ColumnDefinition Width="75" />
+                                            <ColumnDefinition Width="70" />
+                                            <ColumnDefinition Width="75" />
+                                            <ColumnDefinition Width="180" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Border CornerRadius="4" Padding="6,1" Background="{StaticResource BrushAccentSoft}"
+                                                    VerticalAlignment="Center" Margin="0,0,8,0"
+                                                    Visibility="{Binding IsBaseline, Converter={StaticResource BoolToVis}}">
+                                                <TextBlock Text="Baseline" FontSize="10" Foreground="{StaticResource BrushAccent}" />
+                                            </Border>
+                                            <TextBlock Text="{Binding Label}" Foreground="{StaticResource BrushTextPrimary}"
+                                                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="1" Text="{Binding ProfileText}" Foreground="{StaticResource BrushTextSecondary}"
+                                                   FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Grid.Column="2" Text="{Binding TimeText}" Foreground="{StaticResource BrushTextSecondary}"
+                                                   FontSize="12" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="3" Text="{Binding AvgFps}" FontFamily="Consolas" FontWeight="Bold"
+                                                   FontSize="12" TextAlignment="Right" VerticalAlignment="Center"
+                                                   Foreground="{StaticResource BrushTextPrimary}" />
+                                        <TextBlock Grid.Column="4" Text="{Binding DeltaFps}" FontFamily="Consolas" FontSize="12"
+                                                   TextAlignment="Right" VerticalAlignment="Center">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Foreground" Value="{StaticResource BrushOk}" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding DeltaFpsGood}" Value="False">
+                                                            <Setter Property="Foreground" Value="{StaticResource BrushBad}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                        <TextBlock Grid.Column="5" Text="{Binding LowFps}" FontFamily="Consolas" FontSize="12"
+                                                   TextAlignment="Right" VerticalAlignment="Center"
+                                                   Foreground="{StaticResource BrushTextSecondary}" />
+                                        <TextBlock Grid.Column="6" Text="{Binding DeltaLow}" FontFamily="Consolas" FontSize="12"
+                                                   TextAlignment="Right" VerticalAlignment="Center">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Foreground" Value="{StaticResource BrushOk}" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding DeltaLowGood}" Value="False">
+                                                            <Setter Property="Foreground" Value="{StaticResource BrushBad}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                        <StackPanel Grid.Column="7" Orientation="Horizontal" HorizontalAlignment="Right">
+                                            <Button Content="Baseline" FontSize="11" Padding="8,2"
+                                                    Command="{Binding DataContext.SetBaselineCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                    CommandParameter="{Binding}" />
+                                            <Button Content="✕" FontSize="11" Padding="8,2" Margin="6,0,0,0"
+                                                    Command="{Binding DataContext.DeleteBenchmarkCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                    CommandParameter="{Binding}" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,12">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <Viewbox Width="15" Height="15" VerticalAlignment="Center">
+                            <Path Style="{StaticResource LucideIcon}" Data="{StaticResource IconWrench}"
+                                  Stroke="{StaticResource BrushAccent}" />
+                        </Viewbox>
+                        <TextBlock Text="Sim-Werkzeuge" FontSize="14" FontWeight="SemiBold"
+                                   Foreground="{StaticResource BrushTextPrimary}" Margin="8,0,0,0" />
+                    </StackPanel>
+                    <TextBlock Text="Kern-Pinning legt den laufenden MSFS-Prozess auf die schnellen Kerne — V-Cache-CCD bei Dual-CCD-X3D (AMD) bzw. P-Kerne bei Hybrid-CPUs (Intel 12th Gen+); die App erkennt das automatisch. Wirkt sofort, gilt bis zum Sim-Neustart — ideal für A/B-Messungen."
+                               Style="{StaticResource Subtle}" Margin="0,6,0,10" />
+                    <StackPanel Orientation="Horizontal">
+                        <Button Content="MSFS auf schnelle Kerne pinnen" Command="{Binding PinAffinityCommand}" />
+                        <Button Content="Pinning zurücksetzen" Margin="8,0,0,0" Command="{Binding ResetAffinityCommand}" />
+                        <Button Content="Sim-Status (SimConnect)" Margin="8,0,0,0" Command="{Binding QuerySimStatusCommand}"
+                                ToolTip="Fragt Flugzeug, Position und Flugphase über SimConnect ab — dieselben Daten werden bei jeder Messung mitgespeichert, damit Vergleiche fair bleiben." />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+    </Grid>
+</UserControl>

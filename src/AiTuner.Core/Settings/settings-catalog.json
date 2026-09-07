@@ -1,0 +1,754 @@
+﻿[
+  {
+    "id": "msfs-antialiasing", "impact": "veryhigh", "load": "gpu", "area": "MSFS", "match": "video/antialiasing",
+    "name": "Anti-Aliasing", "kind": "enum",
+    "options": [
+      { "value": "TAA", "label": "TAA (nativ)" },
+      { "value": "DLSS", "label": "NVIDIA DLSS" },
+      { "value": "FSR", "label": "AMD FSR (unbestätigt)" },
+      { "value": "FXAA", "label": "FXAA (unbestätigt)" },
+      { "value": "OFF", "label": "Aus (unbestätigt)" }
+    ],
+    "description": "Kantenglättungsverfahren. TAA rendert in voller nativer Auflösung (schärfste Cockpit-Anzeigen, GPU-teuer). DLSS aktiviert die DLSS-Modus-Auswahl und rendert intern niedriger — mit dem aktuellen Transformer-Modell kaum sichtbarer Unterschied.",
+    "rangeNote": "Mit „unbestätigt“ markierte Werte wurden noch nicht gegen die Config validiert.",
+    "target": { "type": "msfs", "section": "Video", "key": "AntiAliasing" }
+  },
+  {
+    "id": "msfs-dlssmode", "dependsOnMatch": "video/antialiasing", "dependsOnValue": "DLSS", "impact": "veryhigh", "load": "gpu", "area": "MSFS", "match": "video/dlssmode",
+    "name": "DLSS-Modus", "kind": "enum",
+    "options": [
+      { "value": "DLAA", "label": "DLAA (native Auflösung, beste Qualität)" },
+      { "value": "QUALITY", "label": "Qualität" },
+      { "value": "BALANCED", "label": "Ausgewogen" },
+      { "value": "PERFORMANCE", "label": "Leistung" },
+      { "value": "ULTRA_PERFORMANCE", "label": "Ultra-Leistung (unbestätigt)" },
+      { "value": "AUTO", "label": "Automatisch" }
+    ],
+    "description": "Greift nur, wenn Anti-Aliasing auf DLSS steht. Verwaschene Glass-Cockpit-Anzeigen waren ein Problem der alten CNN-Modelle — mit DLSS-4-Transformer-Presets (Treiber-Override aktiv) deutlich verbessert. Per Benchmark gegen TAA vergleichen.",
+    "target": { "type": "msfs", "section": "Video", "key": "DLSSMode" }
+  },
+  {
+    "id": "msfs-framegeneration", "impact": "high", "load": "gpu", "area": "MSFS", "match": "video/framegeneration",
+    "name": "Frame-Generierung", "kind": "enum",
+    "options": [
+      { "value": "NONE", "label": "Aus" },
+      { "value": "DLSSG", "label": "NVIDIA DLSS Frame Generation" }
+    ],
+    "description": "Erzeugt Zwischenbilder per KI (RTX 40+). Erhöht die flüssige Darstellung, nicht die Latenz-FPS — Basis-FPS sollte ≥ 30–40 liegen. Benötigt HAGS.",
+    "target": { "type": "msfs", "section": "Video", "key": "FrameGeneration" }
+  },
+  {
+    "id": "msfs-nbframes", "dependsOnMatch": "video/framegeneration", "dependsOnValue": "DLSSG", "impact": "medium", "load": "gpu", "area": "MSFS", "match": "video/nbframestogenerate",
+    "name": "Framerate-Multiplikator (erzeugte Bilder)", "kind": "number", "min": 1, "max": 3,
+    "description": "Anzahl KI-generierter Zwischenbilder pro echtem Frame (1 = 2X). Mehr als 1 nur mit Multi-Frame-Generation (RTX 50).",
+    "target": { "type": "msfs", "section": "Video", "key": "NBFramesToGenerate" }
+  },
+  {
+    "id": "msfs-vsync", "area": "MSFS", "match": "video/vsync",
+    "dependsOnMatch": "video/antialiasing", "dependsOnNotValue": "DLSS",
+    "name": "VSync", "kind": "enum",
+    "options": [ { "value": "0", "label": "Aus" }, { "value": "1", "label": "Ein" } ],
+    "description": "Vertikale Synchronisation im Sim. Mit aktivem DLSS ist die Option im Sim-Menü AUSGEGRAUT (Frame-Generation-/Reflex-Kette übernimmt; FG braucht HAGS — bei deaktiviertem HAGS bleibt sie deshalb wählbar). Ein Cap läuft dann nur über den Treiber, z.B. Vertikale Synchronisierung „1/2 Bildwiederholrate“. Ohne DLSS: mit G-Sync/VRR meist aus + FPS-Limit; als 1/2- oder 1/3-Intervall eine legitime Cap-Strategie für konstante Frametimes.",
+    "target": { "type": "msfs", "section": "Video", "key": "VSync" }
+  },
+  {
+    "id": "msfs-framelimiter", "area": "MSFS", "match": "video/framelimiter",
+    "name": "Maximale Framerate", "kind": "number", "min": 0, "max": 240,
+    "rangeNote": "0 = unbegrenzt",
+    "description": "FPS-Obergrenze des Sims. Mit Frame Generation gilt das Limit für die Basis-FPS (Ausgabe = Limit × Multiplikator).",
+    "target": { "type": "msfs", "section": "Video", "key": "FrameLimiter" }
+  },
+  {
+    "id": "msfs-targetframerate", "dependsOnMatch": "video/dynamicsettings", "dependsOnValue": "1", "area": "MSFS", "match": "video/targetframerate",
+    "name": "Ziel-Framerate (Dynamische Einstellungen)", "kind": "number", "min": 20, "max": 120,
+    "description": "Zielwert, auf den die dynamische Einstellungsanpassung hinregelt (nur wirksam, wenn Dynamische Einstellungen aktiv sind).",
+    "target": { "type": "msfs", "section": "Video", "key": "TargetFrameRate" }
+  },
+  {
+    "id": "msfs-dynamicsettings", "area": "MSFS", "match": "video/dynamicsettings",
+    "name": "Dynamische Einstellungen", "kind": "enum",
+    "options": [ { "value": "0", "label": "Aus" }, { "value": "1", "label": "Ein" } ],
+    "description": "Der Sim senkt Grafikdetails automatisch, um die Ziel-Framerate zu halten. Für reproduzierbare Benchmarks ausschalten!",
+    "target": { "type": "msfs", "section": "Video", "key": "DynamicSettings" }
+  },
+  {
+    "id": "msfs-sharpen", "impact": "low", "load": "gpu", "area": "MSFS", "match": "video/sharpenamount",
+    "name": "Schärfung (FidelityFX)", "kind": "number", "min": 0, "max": 1,
+    "rangeNote": "0.8 entspricht 80 % im Sim-Menü",
+    "description": "Nachschärfung des Bildes. Zu hohe Werte erzeugen Flimmern/Artefakte.",
+    "target": { "type": "msfs", "section": "Video", "key": "SharpenAmount" }
+  },
+  {
+    "id": "msfs-reflex", "area": "MSFS", "match": "video/reflex",
+    "name": "NVIDIA Reflex", "kind": "enum",
+    "options": [ { "value": "ON", "label": "Ein" }, { "value": "OFF", "label": "Aus" } ],
+    "description": "Reduziert die Systemlatenz. Bei aktiver Frame Generation wird Reflex vom Sim erzwungen.",
+    "target": { "type": "msfs", "section": "Video", "key": "Reflex" }
+  },
+  {
+    "id": "msfs-hdr", "impact": "low", "load": "gpu", "area": "MSFS", "match": "video/hdr10",
+    "name": "HDR10", "kind": "enum",
+    "options": [ { "value": "0", "label": "Aus" }, { "value": "1", "label": "Ein" } ],
+    "description": "HDR-Ausgabe (benötigt HDR-fähigen Monitor und Windows-HDR).",
+    "target": { "type": "msfs", "section": "Video", "key": "HDR10" }
+  },
+  {
+    "id": "msfs-texture-quality", "impact": "medium", "load": "gpu", "area": "MSFS", "match": "graphics/texture/quality",
+    "name": "Texturauflösung", "kind": "enum",
+    "options": [
+      { "value": "0", "label": "Ultra" },
+      { "value": "1", "label": "Hoch" },
+      { "value": "2", "label": "Mittel" },
+      { "value": "3", "label": "Niedrig" }
+    ],
+    "description": "VRAM-Hauptverbraucher. Ultra braucht mit Add-on-Flugzeugen 12 GB+ VRAM. Achtung: Dieser Wert ist in der UserCfg invertiert kodiert (0 = Ultra) — validiert.",
+    "target": { "type": "msfs", "section": "Graphics/Texture", "key": "Quality" }
+  },
+  {
+    "id": "msfs-anisotropy", "impact": "low", "load": "gpu", "area": "MSFS", "match": "graphics/texture/maxanisotropy",
+    "name": "Anisotrope Filterung", "kind": "enum",
+    "options": [
+      { "value": "1", "label": "Aus" }, { "value": "2", "label": "2x" }, { "value": "4", "label": "4x" },
+      { "value": "8", "label": "8x" }, { "value": "16", "label": "16x" }
+    ],
+    "description": "Texturschärfe bei flachen Blickwinkeln (Landebahnen!). 16x ist auf modernen GPUs nahezu gratis.",
+    "target": { "type": "msfs", "section": "Graphics/Texture", "key": "MaxAnisotropy" }
+  },
+  {
+    "id": "msfs-terrain-lod", "impact": "veryhigh", "load": "cpu", "area": "MSFS", "match": "graphics/terrain/lodfactor",
+    "name": "Detailgrad des Geländes (Terrain-LOD)", "kind": "number", "min": 0.1, "max": 4,
+    "rangeNote": "1.00 = 100 im Sim-Menü",
+    "description": "Der wichtigste CPU-Hauptthread-Regler. Über ~2.0 (200) steigen die Kosten stark bei kleinem sichtbaren Gewinn — häufigste Ursache für „Mainthread limited“.",
+    "target": { "type": "msfs", "section": "Graphics/Terrain", "key": "LoDFactor" }
+  },
+  {
+    "id": "msfs-objects-lod", "impact": "high", "load": "both", "area": "MSFS", "match": "graphics/objectslod/lodfactor",
+    "name": "Detailgrad von Objekten (Objekt-LOD)", "kind": "number", "min": 0.1, "max": 4,
+    "rangeNote": "1.00 = 100 im Sim-Menü",
+    "description": "Sichtweite/Detailstufe von Gebäuden und Objekten — CPU- und GPU-relevant, besonders an großen Airports.",
+    "target": { "type": "msfs", "section": "Graphics/ObjectsLoD", "key": "LoDFactor" }
+  },
+  {
+    "id": "msfs-precaching", "dependsOnMatch": "graphics/offscreenterrainprecaching/enabled", "dependsOnValue": "1", "impact": "medium", "load": "cpu", "area": "MSFS", "match": "graphics/offscreenterrainprecaching/quality",
+    "name": "Terrain-Pre-Caching (außerhalb des Bildschirms)", "kind": "enum",
+    "options": [
+      { "value": "0", "label": "Niedrig" }, { "value": "1", "label": "Mittel" },
+      { "value": "2", "label": "Hoch" }, { "value": "3", "label": "Ultra" }
+    ],
+    "description": "Wie viel Gelände außerhalb des Sichtfelds vorgeladen wird. Höher = weniger Nachladen beim Umschauen, mehr RAM/CPU.",
+    "target": { "type": "msfs", "section": "Graphics/OffscreenTerrainPreCaching", "key": "Quality" }
+  },
+  {
+    "id": "msfs-clouds", "dependsOnMatch": "graphics/volumetricclouds/enabled", "dependsOnValue": "1", "impact": "veryhigh", "load": "gpu", "area": "MSFS", "match": "graphics/volumetricclouds/quality",
+    "name": "Volumetrische Wolken", "kind": "enum",
+    "options": [
+      { "value": "0", "label": "Niedrig" }, { "value": "1", "label": "Mittel" },
+      { "value": "2", "label": "Hoch" }, { "value": "3", "label": "Ultra" }
+    ],
+    "description": "Einer der größten GPU-Kostenpunkte bei bewölktem Wetter. Ultra→Hoch spart oft 10 %+ GPU-Zeit bei moderatem Qualitätsverlust.",
+    "target": { "type": "msfs", "section": "Graphics/VolumetricClouds", "key": "Quality" }
+  },
+  {
+    "id": "msfs-buildings", "impact": "medium", "load": "both", "area": "MSFS", "match": "graphics/buildings/quality",
+    "name": "Gebäude", "kind": "enum",
+    "options": [
+      { "value": "0", "label": "Niedrig" }, { "value": "1", "label": "Mittel" },
+      { "value": "2", "label": "Hoch" }, { "value": "3", "label": "Ultra" }
+    ],
+    "description": "Qualität der autogenerierten Gebäude.",
+    "target": { "type": "msfs", "section": "Graphics/Buildings", "key": "Quality" }
+  },
+  {
+    "id": "msfs-trees", "impact": "medium", "load": "both", "area": "MSFS", "match": "graphics/procedural/treesquality",
+    "name": "Bäume", "kind": "enum",
+    "options": [
+      { "value": "0", "label": "Niedrig" }, { "value": "1", "label": "Mittel" },
+      { "value": "2", "label": "Hoch" }, { "value": "3", "label": "Ultra" }
+    ],
+    "description": "Baumdichte und -detailstufe.",
+    "target": { "type": "msfs", "section": "Graphics/Procedural", "key": "TreesQuality" }
+  },
+  {
+    "id": "msfs-plants", "impact": "low", "load": "gpu", "area": "MSFS", "match": "graphics/procedural/plantsquality",
+    "name": "Pflanzen", "kind": "enum",
+    "options": [
+      { "value": "0", "label": "Niedrig" }, { "value": "1", "label": "Mittel" },
+      { "value": "2", "label": "Hoch" }, { "value": "3", "label": "Ultra" }
+    ],
+    "description": "Bodenbewuchs-Detailstufe.",
+    "target": { "type": "msfs", "section": "Graphics/Procedural", "key": "PlantsQuality" }
+  },
+  {
+    "id": "msfs-rocks", "impact": "low", "load": "gpu", "area": "MSFS", "match": "graphics/procedural/rocksquality",
+    "name": "Felsen", "kind": "enum",
+    "options": [
+      { "value": "0", "label": "Niedrig" }, { "value": "1", "label": "Mittel" },
+      { "value": "2", "label": "Hoch" }, { "value": "3", "label": "Ultra" }
+    ],
+    "description": "Felsen-Detailstufe.",
+    "target": { "type": "msfs", "section": "Graphics/Procedural", "key": "RocksQuality" }
+  },
+  {
+    "id": "msfs-grass", "impact": "low", "load": "gpu", "area": "MSFS", "match": "graphics/procedural/grassquality",
+    "name": "Gras", "kind": "enum",
+    "options": [
+      { "value": "0", "label": "Niedrig" }, { "value": "1", "label": "Mittel" },
+      { "value": "2", "label": "Hoch" }, { "value": "3", "label": "Ultra" }
+    ],
+    "description": "Gras-Detailstufe und -sichtweite.",
+    "target": { "type": "msfs", "section": "Graphics/Procedural", "key": "GrassQuality" }
+  },
+  {
+    "id": "msfs-shadowmaps", "impact": "medium", "load": "gpu", "area": "MSFS", "match": "graphics/shadows/size",
+    "name": "Shadow Maps", "kind": "enum",
+    "options": [
+      { "value": "256", "label": "256" }, { "value": "512", "label": "512" },
+      { "value": "1024", "label": "1024" }, { "value": "2048", "label": "2048" }
+    ],
+    "description": "Auflösung der Schattenkarten. Höher = schärfere Schatten, mehr GPU/VRAM.",
+    "target": { "type": "msfs", "section": "Graphics/Shadows", "key": "Size" }
+  },
+  {
+    "id": "msfs-terrainshadows", "dependsOnMatch": "graphics/heightfieldshadows/enabled", "dependsOnValue": "1", "impact": "low", "load": "gpu", "area": "MSFS", "match": "graphics/heightfieldshadows/size",
+    "name": "Terrainschatten", "kind": "enum",
+    "options": [
+      { "value": "128", "label": "128" }, { "value": "256", "label": "256" }, { "value": "512", "label": "512" }
+    ],
+    "description": "Auflösung der Geländeschatten (Bergschatten).",
+    "target": { "type": "msfs", "section": "Graphics/HeightFieldShadows", "key": "Size" }
+  },
+  {
+    "id": "msfs-contactshadows", "dependsOnMatch": "graphics/contactshadows/enabled", "dependsOnValue": "1", "impact": "low", "load": "gpu", "area": "MSFS", "match": "graphics/contactshadows/quality",
+    "name": "Kontaktschatten", "kind": "enum",
+    "options": [
+      { "value": "0", "label": "Niedrig" }, { "value": "1", "label": "Mittel" }, { "value": "2", "label": "Hoch" }
+    ],
+    "description": "Feine Kontaktschatten an Objektberührungspunkten.",
+    "target": { "type": "msfs", "section": "Graphics/ContactShadows", "key": "Quality" }
+  },
+  {
+    "id": "msfs-ssao", "dependsOnMatch": "graphics/ssao/enabled", "dependsOnValue": "1", "impact": "medium", "load": "gpu", "area": "MSFS", "match": "graphics/ssao/quality",
+    "name": "Umgebungsverdeckung (SSAO)", "kind": "enum",
+    "options": [
+      { "value": "0", "label": "Niedrig" }, { "value": "1", "label": "Mittel" }, { "value": "2", "label": "Hoch" }
+    ],
+    "description": "Weiche Verschattung in Ecken und unter Objekten — deutlicher Optikgewinn im Cockpit, moderater GPU-Kostenpunkt.",
+    "target": { "type": "msfs", "section": "Graphics/SSAO", "key": "Quality" }
+  },
+  {
+    "id": "msfs-ssr", "dependsOnMatch": "graphics/ssr/enabled", "dependsOnValue": "1", "impact": "medium", "load": "gpu", "area": "MSFS", "match": "graphics/ssr/quality",
+    "name": "Raymarching-Reflexionen (SSR)", "kind": "enum",
+    "options": [
+      { "value": "0", "label": "Niedrig" }, { "value": "1", "label": "Mittel" }, { "value": "2", "label": "Hoch" }
+    ],
+    "description": "Screen-Space-Reflexionen auf Wasser und glatten Flächen.",
+    "target": { "type": "msfs", "section": "Graphics/SSR", "key": "Quality" }
+  },
+  {
+    "id": "msfs-windshield", "impact": "low", "load": "gpu", "area": "MSFS", "match": "graphics/windshield/quality",
+    "name": "Windschutzscheibeneffekte", "kind": "enum",
+    "options": [
+      { "value": "0", "label": "Niedrig" }, { "value": "1", "label": "Mittel" }, { "value": "2", "label": "Hoch" }
+    ],
+    "description": "Regen-/Eis-Effekte auf der Scheibe.",
+    "target": { "type": "msfs", "section": "Graphics/WindShield", "key": "Quality" }
+  },
+  {
+    "id": "msfs-water", "impact": "low", "load": "gpu", "area": "MSFS", "match": "graphics/water/fftsize",
+    "name": "Wasserwellen", "kind": "enum",
+    "options": [
+      { "value": "128", "label": "Niedrig (128)" }, { "value": "256", "label": "Mittel (256)" }, { "value": "512", "label": "Hoch (512)" }
+    ],
+    "description": "Auflösung der Wellensimulation (FFT).",
+    "target": { "type": "msfs", "section": "Graphics/Water", "key": "FFTSize" }
+  },
+  {
+    "id": "msfs-volumetriclights", "dependsOnMatch": "graphics/volumetriclights/enabled", "dependsOnValue": "1", "impact": "medium", "load": "gpu", "area": "MSFS", "match": "graphics/volumetriclights/quality",
+    "name": "Lichtstrahlen (Volumetrische Lichter)", "kind": "enum",
+    "options": [
+      { "value": "0", "label": "Niedrig" }, { "value": "1", "label": "Mittel" }, { "value": "2", "label": "Hoch" }
+    ],
+    "description": "Volumetrische Lichtstreuung (God Rays, Scheinwerfer in Wolken/Nebel).",
+    "target": { "type": "msfs", "section": "Graphics/VolumetricLights", "key": "Quality" }
+  },
+  {
+    "id": "msfs-clouds-enabled", "impact": "veryhigh", "load": "gpu", "area": "MSFS", "match": "graphics/volumetricclouds/enabled",
+    "name": "Volumetrische Wolken — Ein/Aus", "kind": "enum",
+    "options": [ { "value": "0", "label": "Aus" }, { "value": "1", "label": "Ein" } ],
+    "description": "Komplettschalter für die 3D-Wolkensimulation. Aus = einfacher Himmel — riesiger FPS-Gewinn, aber massiver Optikverlust; für Sim-Wetterflüge praktisch Pflicht an.",
+    "target": { "type": "msfs", "section": "Graphics/VolumetricClouds", "key": "Enabled" }
+  },
+  {
+    "id": "msfs-vollights-enabled", "impact": "medium", "load": "gpu", "area": "MSFS", "match": "graphics/volumetriclights/enabled",
+    "name": "Lichtstrahlen — Ein/Aus", "kind": "enum",
+    "options": [ { "value": "0", "label": "Aus" }, { "value": "1", "label": "Ein" } ],
+    "description": "Komplettschalter für volumetrische Lichtstreuung (God Rays, Scheinwerferkegel in Nebel/Wolken).",
+    "target": { "type": "msfs", "section": "Graphics/VolumetricLights", "key": "Enabled" }
+  },
+  {
+    "id": "msfs-ssao-enabled", "impact": "medium", "load": "gpu", "area": "MSFS", "match": "graphics/ssao/enabled",
+    "name": "Umgebungsverdeckung (SSAO) — Ein/Aus", "kind": "enum",
+    "options": [ { "value": "0", "label": "Aus" }, { "value": "1", "label": "Ein" } ],
+    "description": "Komplettschalter für die Umgebungsverdeckung. Aus wirkt das Cockpit deutlich flacher.",
+    "target": { "type": "msfs", "section": "Graphics/SSAO", "key": "Enabled" }
+  },
+  {
+    "id": "msfs-ssao-fullres", "dependsOnMatch": "graphics/ssao/enabled", "dependsOnValue": "1", "impact": "medium", "load": "gpu", "area": "MSFS", "match": "graphics/ssao/fullres",
+    "name": "SSAO in voller Auflösung", "kind": "enum",
+    "options": [ { "value": "0", "label": "Halbe Auflösung (Standard)" }, { "value": "1", "label": "Volle Auflösung" } ],
+    "description": "Berechnet die Umgebungsverdeckung in voller statt halber Auflösung — feinere Schattierung, spürbar teurer.",
+    "target": { "type": "msfs", "section": "Graphics/SSAO", "key": "FullRes" }
+  },
+  {
+    "id": "msfs-ssr-enabled", "impact": "medium", "load": "gpu", "area": "MSFS", "match": "graphics/ssr/enabled",
+    "name": "Raymarching-Reflexionen (SSR) — Ein/Aus", "kind": "enum",
+    "options": [ { "value": "0", "label": "Aus" }, { "value": "1", "label": "Ein" } ],
+    "description": "Komplettschalter für Screen-Space-Reflexionen (Wasser, nasse Flächen, Lack).",
+    "target": { "type": "msfs", "section": "Graphics/SSR", "key": "Enabled" }
+  },
+  {
+    "id": "msfs-ssr-halfres", "dependsOnMatch": "graphics/ssr/enabled", "dependsOnValue": "1", "impact": "low", "load": "gpu", "area": "MSFS", "match": "graphics/ssr/halfres",
+    "name": "SSR in halber Auflösung", "kind": "enum",
+    "options": [ { "value": "0", "label": "Volle Auflösung" }, { "value": "1", "label": "Halbe Auflösung (spart GPU)" } ],
+    "description": "Reflexionen in halber Auflösung berechnen — etwas gröber, spürbar günstiger.",
+    "target": { "type": "msfs", "section": "Graphics/SSR", "key": "HalfRes" }
+  },
+  {
+    "id": "msfs-contactshadows-enabled", "impact": "low", "load": "gpu", "area": "MSFS", "match": "graphics/contactshadows/enabled",
+    "name": "Kontaktschatten — Ein/Aus", "kind": "enum",
+    "options": [ { "value": "0", "label": "Aus" }, { "value": "1", "label": "Ein" } ],
+    "description": "Komplettschalter für die feinen Kontaktschatten an Berührungspunkten.",
+    "target": { "type": "msfs", "section": "Graphics/ContactShadows", "key": "Enabled" }
+  },
+  {
+    "id": "msfs-terrainshadows-enabled", "impact": "low", "load": "gpu", "area": "MSFS", "match": "graphics/heightfieldshadows/enabled",
+    "name": "Terrainschatten — Ein/Aus", "kind": "enum",
+    "options": [ { "value": "0", "label": "Aus" }, { "value": "1", "label": "Ein" } ],
+    "description": "Komplettschalter für Geländeschatten (Berge werfen Schatten ins Tal).",
+    "target": { "type": "msfs", "section": "Graphics/HeightFieldShadows", "key": "Enabled" }
+  },
+  {
+    "id": "msfs-precaching-enabled", "impact": "medium", "load": "cpu", "area": "MSFS", "match": "graphics/offscreenterrainprecaching/enabled",
+    "name": "Terrain-Pre-Caching — Ein/Aus", "kind": "enum",
+    "options": [ { "value": "0", "label": "Aus" }, { "value": "1", "label": "Ein" } ],
+    "description": "Komplettschalter fürs Vorladen von Gelände außerhalb des Sichtfelds. Aus = weniger RAM/CPU, mehr Nachladen beim Umschauen.",
+    "target": { "type": "msfs", "section": "Graphics/OffscreenTerrainPreCaching", "key": "Enabled" }
+  },
+  {
+    "id": "msfs-dof-quality", "dependsOnMatch": "graphics/dof/enabled", "dependsOnValue": "1", "impact": "low", "load": "gpu", "area": "MSFS", "match": "graphics/dof/quality",
+    "name": "Schärfentiefe — Qualität", "kind": "enum",
+    "options": [ { "value": "0", "label": "Niedrig" }, { "value": "1", "label": "Hoch" } ],
+    "description": "Qualitätsstufe der Tiefenunschärfe (wirkt nur bei aktivierter Schärfentiefe).",
+    "target": { "type": "msfs", "section": "Graphics/DOF", "key": "Quality" }
+  },
+  {
+    "id": "msfs-motionblur-quality", "dependsOnMatch": "graphics/motionblur/enabled", "dependsOnValue": "1", "impact": "low", "load": "gpu", "area": "MSFS", "match": "graphics/motionblur/quality",
+    "name": "Bewegungsunschärfe — Qualität", "kind": "enum",
+    "options": [ { "value": "0", "label": "Niedrig" }, { "value": "1", "label": "Hoch" } ],
+    "description": "Qualitätsstufe der Bewegungsunschärfe (wirkt nur bei aktivierter Bewegungsunschärfe).",
+    "target": { "type": "msfs", "section": "Graphics/MotionBlur", "key": "Quality" }
+  },
+  {
+    "id": "msfs-rtshadows", "impact": "high", "load": "gpu", "area": "MSFS", "match": "graphics/raytracedshadows/enabled",
+    "name": "Raytracing-Schatten", "kind": "enum",
+    "options": [ { "value": "0", "label": "Aus" }, { "value": "1", "label": "Ein" } ],
+    "description": "Hardware-Raytracing für präzise Schatten — sichtbarer Qualitätsgewinn, spürbare GPU-Kosten. Auf schwächeren RTX-Karten zuerst hier sparen.",
+    "target": { "type": "msfs", "section": "Graphics/RaytracedShadows", "key": "Enabled" }
+  },
+  {
+    "id": "msfs-dof", "impact": "low", "load": "gpu", "area": "MSFS", "match": "graphics/dof/enabled",
+    "name": "Schärfentiefe (DOF)", "kind": "enum",
+    "options": [ { "value": "0", "label": "Aus" }, { "value": "1", "label": "Ein" } ],
+    "description": "Kamera-Tiefenunschärfe in Außenansichten.",
+    "target": { "type": "msfs", "section": "Graphics/DOF", "key": "Enabled" }
+  },
+  {
+    "id": "msfs-motionblur", "impact": "low", "load": "gpu", "area": "MSFS", "match": "graphics/motionblur/enabled",
+    "name": "Bewegungsunschärfe", "kind": "enum",
+    "options": [ { "value": "0", "label": "Aus" }, { "value": "1", "label": "Ein" } ],
+    "description": "Bewegungsunschärfe — Geschmackssache, kostet etwas GPU.",
+    "target": { "type": "msfs", "section": "Graphics/MotionBlur", "key": "Enabled" }
+  },
+  {
+    "id": "msfs-glasscockpit", "impact": "medium", "load": "cpu", "area": "MSFS", "match": "graphics/glasscockpitsrefreshrate/quality",
+    "name": "Glascockpit-Bildwiederholrate", "kind": "enum",
+    "options": [
+      { "value": "0", "label": "Niedrig" }, { "value": "1", "label": "Mittel" }, { "value": "2", "label": "Hoch" }
+    ],
+    "description": "Aktualisierungsrate der Cockpit-Displays (PFD/ND/EICAS). Hoch = flüssigere Anzeigen, mehr CPU-Last — relevant bei komplexen Airlinern.",
+    "target": { "type": "msfs", "section": "Graphics/GlassCockpitsRefreshRate", "key": "Quality" }
+  },
+  {
+    "id": "msfs-particles", "impact": "low", "load": "gpu", "area": "MSFS", "match": "graphics/particles/quality",
+    "name": "Partikelqualität", "kind": "enum",
+    "options": [ { "value": "0", "label": "Niedrig" }, { "value": "1", "label": "Hoch" } ],
+    "description": "Qualität visueller Partikeleffekte (Gischt, Staub, Wirbelschleppen-Kondens).",
+    "target": { "type": "msfs", "section": "Graphics/Particles", "key": "Quality" }
+  },
+  {
+    "id": "msfs-primaryscaling", "impact": "veryhigh", "load": "gpu", "area": "MSFS", "match": "video/primaryscaling",
+    "name": "Render-Skalierung", "kind": "number", "min": 0.5, "max": 2,
+    "rangeNote": "1.000000 = 100 % im Sim-Menü",
+    "description": "Interner Auflösungsfaktor der 3D-Szene. Bei aktivem DLSS/FSR bestimmt stattdessen deren Modus die interne Auflösung.",
+    "target": { "type": "msfs", "section": "Video", "key": "PrimaryScaling" }
+  },
+  {
+    "id": "msfs-secondaryscaling", "impact": "medium", "load": "gpu", "area": "MSFS", "match": "video/secondaryscaling",
+    "name": "Sekundäre Render-Skalierung", "kind": "number", "min": 0.5, "max": 2,
+    "rangeNote": "1.000000 = 100 %",
+    "description": "Skalierungsfaktor des sekundären Renderpfads (u.a. Effekte). Genaue Wirkung im Sim nicht offiziell dokumentiert — vorsichtig ändern.",
+    "target": { "type": "msfs", "section": "Video", "key": "SecondaryScaling" }
+  },
+  {
+    "id": "msfs-displacement", "impact": "low", "load": "gpu", "area": "MSFS", "match": "graphics/displacementmapping/enabled",
+    "name": "Displacement-Mapping", "kind": "enum",
+    "options": [ { "value": "0", "label": "Aus" }, { "value": "1", "label": "Ein" } ],
+    "description": "Echte Geometrieverformung für Oberflächendetails (z.B. Schotter, Sand).",
+    "target": { "type": "msfs", "section": "Graphics/DisplacementMapping", "key": "Enabled" }
+  },
+  {
+    "id": "msfs-reflectionprobe", "impact": "low", "load": "gpu", "area": "MSFS", "match": "graphics/reflectionprobe/size",
+    "name": "Cube-Map-Reflexionen", "kind": "enum",
+    "options": [
+      { "value": "128", "label": "128 (unbestätigt)" }, { "value": "192", "label": "192" },
+      { "value": "256", "label": "256" }, { "value": "384", "label": "384 (unbestätigt)" }
+    ],
+    "description": "Auflösung der Umgebungs-Reflexionstextur (Flugzeuglack, Cockpitflächen).",
+    "target": { "type": "msfs", "section": "Graphics/ReflectionProbe", "key": "Size" }
+  },
+  {
+    "id": "msfs-char-quantity", "impact": "low", "load": "cpu", "area": "MSFS", "match": "graphics/characters/quantity",
+    "name": "Charakteranzahl", "kind": "enum",
+    "options": [
+      { "value": "-1", "label": "Aus" }, { "value": "0", "label": "Niedrig" },
+      { "value": "1", "label": "Mittel" }, { "value": "2", "label": "Hoch" }, { "value": "3", "label": "Ultra (unbestätigt)" }
+    ],
+    "description": "Anzahl animierter Personen an Flughäfen. CPU-relevant an großen Airports.",
+    "target": { "type": "msfs", "section": "Graphics/Characters", "key": "Quantity" }
+  },
+  {
+    "id": "msfs-char-quality", "impact": "low", "load": "gpu", "area": "MSFS", "match": "graphics/characters/quality",
+    "name": "Qualität der Charaktere", "kind": "enum",
+    "options": [
+      { "value": "0", "label": "Niedrig" }, { "value": "1", "label": "Mittel" }, { "value": "2", "label": "Hoch" }
+    ],
+    "description": "Detailstufe der Personenmodelle.",
+    "target": { "type": "msfs", "section": "Graphics/Characters", "key": "Quality" }
+  },
+  {
+    "id": "msfs-char-variety", "impact": "low", "load": "gpu", "area": "MSFS", "match": "graphics/characters/variety",
+    "name": "Charaktervielfalt", "kind": "enum",
+    "options": [
+      { "value": "0", "label": "Niedrig" }, { "value": "1", "label": "Mittel" }, { "value": "2", "label": "Hoch" }
+    ],
+    "description": "Anzahl unterschiedlicher Personenmodelle (RAM/VRAM-relevant).",
+    "target": { "type": "msfs", "section": "Graphics/Characters", "key": "Variety" }
+  },
+  {
+    "id": "msfs-traffic-aircraft", "impact": "high", "load": "cpu", "area": "MSFS", "match": "graphics/traffic/aircrafttrafficquantity",
+    "name": "Menge des Flugzeugverkehrs", "kind": "enum",
+    "options": [
+      { "value": "-1", "label": "Aus" }, { "value": "0", "label": "Niedrig" },
+      { "value": "1", "label": "Mittel" }, { "value": "2", "label": "Hoch" }, { "value": "3", "label": "Ultra (unbestätigt)" }
+    ],
+    "description": "Sim-eigener KI-Flugverkehr. Mit Traffic-Add-ons (FSLTL, FS Traffic) auf Aus lassen, sonst doppelter Verkehr.",
+    "target": { "type": "msfs", "section": "Graphics/Traffic", "key": "AircraftTrafficQuantity" }
+  },
+  {
+    "id": "msfs-traffic-aircraft-variety", "impact": "low", "load": "cpu", "area": "MSFS", "match": "graphics/traffic/aircrafttrafficvariety",
+    "name": "Vielfalt des Flugverkehrs", "kind": "enum",
+    "options": [
+      { "value": "0", "label": "Niedrig (1 Modellvariante)" }, { "value": "1", "label": "Mittel (10 Varianten)" },
+      { "value": "2", "label": "Hoch (60 Varianten)" }, { "value": "3", "label": "Ultra (unbegrenzt)" }
+    ],
+    "description": "Anzahl unterschiedlicher Flugzeugmodelle für Verkehr/Multiplayer — RAM/VRAM-relevant.",
+    "target": { "type": "msfs", "section": "Graphics/Traffic", "key": "AircraftTrafficVariety" }
+  },
+  {
+    "id": "msfs-traffic-services", "impact": "medium", "load": "cpu", "area": "MSFS", "match": "graphics/traffic/airportsservicesquantity",
+    "name": "Menge der Flughafendienste", "kind": "enum",
+    "options": [
+      { "value": "-1", "label": "Aus" }, { "value": "0", "label": "Niedrig" },
+      { "value": "1", "label": "Mittel" }, { "value": "2", "label": "Hoch" }, { "value": "3", "label": "Ultra (unbestätigt)" }
+    ],
+    "description": "Sim-eigene Bodenfahrzeuge. Mit GSX meist auf Aus.",
+    "target": { "type": "msfs", "section": "Graphics/Traffic", "key": "AirportsServicesQuantity" }
+  },
+  {
+    "id": "msfs-traffic-services-variety", "impact": "low", "load": "cpu", "area": "MSFS", "match": "graphics/traffic/airportsservicesvariety",
+    "name": "Vielfalt der Flughafendienste", "kind": "enum",
+    "options": [
+      { "value": "0", "label": "Niedrig" }, { "value": "1", "label": "Mittel" },
+      { "value": "2", "label": "Hoch" }, { "value": "3", "label": "Ultra (unbestätigt)" }
+    ],
+    "description": "Anzahl unterschiedlicher Bodenfahrzeug-Modelle (RAM/VRAM-relevant).",
+    "target": { "type": "msfs", "section": "Graphics/Traffic", "key": "AirportsServicesVariety" }
+  },
+  {
+    "id": "msfs-traffic-parked-variety", "impact": "low", "load": "cpu", "area": "MSFS", "match": "graphics/traffic/parkedaircraftvariety",
+    "name": "Vielfalt der geparkten Flugzeuge", "kind": "enum",
+    "options": [
+      { "value": "0", "label": "Niedrig" }, { "value": "1", "label": "Mittel" },
+      { "value": "2", "label": "Hoch" }, { "value": "3", "label": "Ultra (unbestätigt)" }
+    ],
+    "description": "Anzahl unterschiedlicher Modelle für statisch geparkte Flugzeuge.",
+    "target": { "type": "msfs", "section": "Graphics/Traffic", "key": "ParkedAircraftVariety" }
+  },
+  {
+    "id": "msfs-traffic-parked", "impact": "medium", "load": "cpu", "area": "MSFS", "match": "graphics/traffic/parkedaircraftquantity",
+    "name": "Anzahl geparkter Flugzeuge", "kind": "enum",
+    "options": [
+      { "value": "-1", "label": "Aus" }, { "value": "0", "label": "Niedrig" },
+      { "value": "1", "label": "Mittel" }, { "value": "2", "label": "Hoch" }, { "value": "3", "label": "Ultra (unbestätigt)" }
+    ],
+    "description": "Statisch geparkte KI-Flugzeuge an Airports. Mit FSLTL-Static-Traffic auf Aus.",
+    "target": { "type": "msfs", "section": "Graphics/Traffic", "key": "ParkedAircraftQuantity" }
+  },
+  {
+    "id": "msfs-traffic-road", "impact": "medium", "load": "cpu", "area": "MSFS", "match": "graphics/traffic/roadquality",
+    "name": "Straßenverkehr", "kind": "enum",
+    "options": [
+      { "value": "-1", "label": "Aus" }, { "value": "0", "label": "Niedrig" },
+      { "value": "1", "label": "Mittel" }, { "value": "2", "label": "Hoch" }, { "value": "3", "label": "Ultra (unbestätigt)" }
+    ],
+    "description": "Autos auf Straßen — CPU-relevant über Städten, aus der Airliner-Höhe kaum sichtbar.",
+    "target": { "type": "msfs", "section": "Graphics/Traffic", "key": "RoadQuality" }
+  },
+  {
+    "id": "msfs-traffic-sea", "impact": "low", "load": "cpu", "area": "MSFS", "match": "graphics/traffic/seaquality",
+    "name": "Seeverkehr", "kind": "enum",
+    "options": [
+      { "value": "-1", "label": "Aus" }, { "value": "0", "label": "Niedrig" },
+      { "value": "1", "label": "Mittel" }, { "value": "2", "label": "Hoch" }, { "value": "3", "label": "Ultra (unbestätigt)" }
+    ],
+    "description": "Schiffe und Boote auf Gewässern.",
+    "target": { "type": "msfs", "section": "Graphics/Traffic", "key": "SeaQuality" }
+  },
+  {
+    "id": "msfs-fauna", "impact": "low", "load": "cpu", "area": "MSFS", "match": "graphics/fauna/quantity",
+    "name": "Fauna-Dichte", "kind": "enum",
+    "options": [
+      { "value": "-1", "label": "Aus" }, { "value": "0", "label": "Niedrig" },
+      { "value": "1", "label": "Mittel" }, { "value": "2", "label": "Hoch" }, { "value": "3", "label": "Ultra (unbestätigt)" }
+    ],
+    "description": "Tiere in der Spielwelt (Vogelschwärme, Herden).",
+    "target": { "type": "msfs", "section": "Graphics/Fauna", "key": "Quantity" }
+  },
+  {
+    "id": "msfs-seatbelts", "area": "MSFS", "match": "graphics/seatbelts/enabled",
+    "name": "Sichtbarkeit des Sicherheitsgurts", "kind": "enum",
+    "options": [ { "value": "0", "label": "Aus" }, { "value": "1", "label": "Ein" } ],
+    "description": "Zeigt Sicherheitsgurte im Cockpit an.",
+    "target": { "type": "msfs", "section": "Graphics/Seatbelts", "key": "Enabled" }
+  },
+  {
+    "id": "win-visualfx", "area": "Windows", "match": "visualfx",
+    "name": "Visuelle Effekte", "kind": "enum",
+    "options": [
+      { "value": "0", "label": "Automatisch" }, { "value": "1", "label": "Beste Darstellung" },
+      { "value": "2", "label": "Beste Leistung" }, { "value": "3", "label": "Benutzerdefiniert" }
+    ],
+    "description": "Windows-Darstellungseffekte (Animationen, Transparenz). Einfluss auf Spiele gering — „Beste Leistung“ hilft eher schwachen Systemen.",
+    "target": { "type": "reg", "hive": "HKCU", "path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VisualEffects", "name": "VisualFXSetting" }
+  },
+  {
+    "id": "win-gamemode", "area": "Windows", "match": "gamemode",
+    "name": "Spielemodus", "kind": "enum",
+    "options": [ { "value": "0", "label": "Aus" }, { "value": "1", "label": "Ein" } ],
+    "description": "Priorisiert das aktive Spiel beim CPU-Scheduling. Auf Dual-CCD-X3D-CPUs zusätzlich Voraussetzung für die automatische V-Cache-CCD-Zuordnung.",
+    "target": { "type": "reg", "hive": "HKCU", "path": "Software\\Microsoft\\GameBar", "name": "AutoGameModeEnabled" }
+  },
+  {
+    "id": "win-historicalcapture", "area": "Windows", "match": "historicalcapture",
+    "name": "Hintergrundaufzeichnung", "kind": "enum",
+    "options": [ { "value": "0", "label": "Aus" }, { "value": "1", "label": "Ein" } ],
+    "description": "„Aufzeichnen, was geschehen ist“ — permanente Hintergrundaufnahme, größter DVR-Kostenpunkt.",
+    "target": { "type": "reg", "hive": "HKCU", "path": "Software\\Microsoft\\Windows\\CurrentVersion\\GameDVR", "name": "HistoricalCaptureEnabled" }
+  },
+  {
+    "id": "win-gamedvr", "area": "Windows", "match": "gamedvr",
+    "name": "Game DVR (Capture-Infrastruktur)", "kind": "enum",
+    "options": [ { "value": "0", "label": "Aus" }, { "value": "1", "label": "Ein" } ],
+    "description": "Master-Schalter der DVR/Capture-Ebene (ohne Windows-11-Oberfläche). Aus = kein Capture-Hook mehr in Spielen, Game-Bar-Aufnahmen deaktiviert.",
+    "target": { "type": "reg", "hive": "HKCU", "path": "System\\GameConfigStore", "name": "GameDVR_Enabled" }
+  },
+  {
+    "id": "win-gamebarcapture", "area": "Windows", "match": "gamebarcapture",
+    "name": "App-Aufzeichnung (AppCapture)", "kind": "enum",
+    "options": [ { "value": "0", "label": "Aus" }, { "value": "1", "label": "Ein" } ],
+    "description": "Aufnahmefunktion der Xbox Game Bar.",
+    "target": { "type": "reg", "hive": "HKCU", "path": "Software\\Microsoft\\Windows\\CurrentVersion\\GameDVR", "name": "AppCaptureEnabled" }
+  },
+  {
+    "id": "win-hags", "area": "Windows", "match": "hags",
+    "name": "Hardwarebeschleunigte GPU-Planung (HAGS)", "kind": "enum",
+    "options": [ { "value": "2", "label": "Ein" }, { "value": "1", "label": "Aus" } ],
+    "description": "GPU-Scheduling in Hardware; Voraussetzung für DLSS Frame Generation. Änderung benötigt Administratorrechte (UAC) und einen Windows-Neustart.",
+    "target": { "type": "reg", "hive": "HKLM", "path": "SYSTEM\\CurrentControlSet\\Control\\GraphicsDrivers", "name": "HwSchMode", "reboot": true }
+  },
+  {
+    "id": "win-powerplan", "area": "Windows", "match": "powerplan",
+    "name": "Aktiver Energieplan", "kind": "enum",
+    "options": [
+      { "value": "381b4222-f694-41f0-9685-ff5bb260df2e", "label": "Ausbalanciert (empfohlen bei Dual-CCD X3D)" },
+      { "value": "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c", "label": "Höchstleistung" },
+      { "value": "e9a42b02-d5df-448d-aa00-03f14749eb61", "label": "Ultimative Leistung" }
+    ],
+    "description": "Windows-Energieplan. Höchstleistung hält Taktraten konstant hoch, verhindert aber das Core-Parking, das AMDs V-Cache-CCD-Steuerung braucht.",
+    "rangeNote": "Der Plan muss auf dem System existieren.",
+    "target": { "type": "powerplan" }
+  },
+  {
+    "id": "nv-rbar", "area": "NVIDIA", "match": "0x000f00ba",
+    "name": "Resizable BAR (rBAR – Enable)", "kind": "enum",
+    "options": [ { "value": "0", "label": "Aus" }, { "value": "1", "label": "Ein" } ],
+    "description": "Treiberseitiger rBAR-Schalter für das MSFS-Profil (entspricht „rBAR - Enable“ im Profile Inspector). Wirkt nur, wenn Resizable BAR auch im BIOS aktiv ist.",
+    "target": { "type": "nvidia", "settingId": "0x000F00BA" }
+  },
+  {
+    "id": "nv-vsync", "area": "NVIDIA", "match": "verticalsync",
+    "name": "Vertikale Synchronisierung (Treiber)", "kind": "enum",
+    "options": [
+      { "value": "1620054674", "label": "Anwendungsgesteuert (Standard)" },
+      { "value": "138503943", "label": "Aus (erzwungen)" },
+      { "value": "1199458624", "label": "Ein (erzwungen)" },
+      { "value": "845218372", "label": "Ein – 1/2 Bildwiederholrate" },
+      { "value": "1898516513", "label": "Ein – 1/3 Bildwiederholrate (unbestätigt)" },
+      { "value": "321278550", "label": "Ein – 1/4 Bildwiederholrate (unbestätigt)" }
+    ],
+    "description": "VSync-Vorgabe des Treibers für MSFS — übersteuert die Sim-Einstellung. Die Bruchteil-Modi cappen die FPS auf 1/2, 1/3 oder 1/4 der Monitor-Bildwiederholrate (Cap-Strategie für konstante Frametimes).",
+    "rangeNote": "Die Werte sind treiberinterne Codes — nur die gelisteten Optionen verwenden.",
+    "target": { "type": "nvidia", "settingId": "0x00A879CF" }
+  },
+  {
+    "id": "nv-vsync-tear", "area": "NVIDIA", "match": "verticalsynctearcontrol",
+    "name": "VSync Tear Control (Adaptive VSync)", "kind": "enum",
+    "options": [
+      { "value": "2525368439", "label": "Standard" },
+      { "value": "2576552580", "label": "Adaptiv (VSync nur oberhalb der Monitor-Hz)" }
+    ],
+    "description": "Adaptives VSync: synchronisiert nur, wenn die FPS über der Bildwiederholrate liegen — darunter wird Tearing zugelassen statt FPS zu halbieren.",
+    "target": { "type": "nvidia", "settingId": "0x005A375C" }
+  },
+  {
+    "id": "nv-ull", "area": "NVIDIA", "match": "0x00c09d09", "impact": "medium", "load": "cpu",
+    "name": "Latenzarmer Modus (Ultra Low Latency)", "kind": "enum",
+    "options": [
+      { "value": "0", "label": "Aus" },
+      { "value": "1", "label": "Ein" },
+      { "value": "2", "label": "Ultra" }
+    ],
+    "description": "Reduziert die Render-Queue des Treibers und damit die Eingabelatenz. „Ultra“ ist der ideale Begleiter zur VSync-Bruchteil-Cap-Strategie (1/2 bzw. 1/3 Bildwiederholrate) — es neutralisiert einen Großteil der klassischen VSync-Latenz. Entspricht „Ultra Low Latency – CPL State“ im Profile Inspector.",
+    "rangeNote": "ID-Zuordnung an einem realen Profil validiert (Ultra = 2).",
+    "target": { "type": "nvidia", "settingId": "0x00C09D09" }
+  },
+  {
+    "id": "nv-mprf", "area": "NVIDIA", "match": "maximumprerenderedframes", "impact": "low", "load": "cpu",
+    "name": "Maximal vorgerenderte Bilder", "kind": "enum",
+    "options": [
+      { "value": "1", "label": "1 (niedrigste Latenz — empfohlen mit VSync-Cap)" },
+      { "value": "2", "label": "2" },
+      { "value": "3", "label": "3" },
+      { "value": "0", "label": "Anwendungsgesteuert (unbestätigt)" }
+    ],
+    "description": "Wie viele Frames die CPU vorbereiten darf, bevor die GPU sie anzeigt. 1 = minimale Latenz (Teil der Smooth-Cap-Kette mit VSync-Bruchteil + Latenzarmer Modus Ultra); höhere Werte glätten CPU-Spikes auf Kosten der Latenz.",
+    "target": { "type": "nvidia", "settingId": "0x007BA09E" }
+  },
+  {
+    "id": "nv-frl", "area": "NVIDIA", "match": "frameratelimiter",
+    "name": "FPS-Limiter (Treiber)", "kind": "number", "min": 0, "max": 240,
+    "rangeNote": "0 = aus. NICHT mit einem VSync-Bruchteil (1/2, 1/3) kombinieren — zwei Taktgeber erzeugen Judder.",
+    "description": "Klassischer Treiber-FPS-Limiter für MSFS. Cappt die Rate, synchronisiert aber nicht mit dem Monitor — für sauberes Pacing ist die VSync-Bruchteil-Strategie überlegen. Sinnvoll, wenn VSync komplett aus bleiben soll (z.B. mit G-Sync + Limit knapp unter der Monitor-Hz).",
+    "target": { "type": "nvidia", "settingId": "0x10835002" }
+  },
+  {
+    "id": "nv-trilinear", "area": "NVIDIA", "match": "texturefilteringtrilinearoptimization",
+    "name": "Texturfilterung – Trilineare Optimierung", "kind": "enum",
+    "options": [ { "value": "0", "label": "Aus" }, { "value": "1", "label": "Ein" } ],
+    "description": "Beschleunigt die trilineare Filterung mit minimalem Qualitätsverlust. Standard: Ein.",
+    "target": { "type": "nvidia", "settingId": "0x002ECAF2" }
+  },
+  {
+    "id": "nv-texquality", "area": "NVIDIA", "match": "texturefilteringquality",
+    "name": "Texturfilterung – Qualität", "kind": "enum",
+    "options": [
+      { "value": "20", "label": "Hohe Qualität" },
+      { "value": "10", "label": "Leistung (unbestätigt)" },
+      { "value": "0", "label": "Hohe Leistung (unbestätigt)" }
+    ],
+    "description": "Qualitätsstufe der Texturfilterung im Treiber. „Hohe Qualität“ deaktiviert alle Filter-Optimierungen — auf modernen GPUs praktisch gratis.",
+    "rangeNote": "Zwischenstufen-Codes sind nicht validiert — im Zweifel bei 20 (Hohe Qualität) bleiben.",
+    "target": { "type": "nvidia", "settingId": "0x00CE2691" }
+  },
+  {
+    "id": "nv-shadercache", "area": "NVIDIA", "match": "shaderdiskcachemaximumsize",
+    "name": "Shader-Cache – Maximale Größe", "kind": "enum",
+    "options": [
+      { "value": "4294967295", "label": "Unbegrenzt (empfohlen für MSFS)" },
+      { "value": "0", "label": "Treiber-Standard (unbestätigt)" }
+    ],
+    "description": "Obergrenze des Shader-Disk-Caches. MSFS kompiliert sehr viele Shader — ein zu kleiner Cache wird zyklisch verdrängt und verursacht Kompilier-Ruckler.",
+    "target": { "type": "nvidia", "settingId": "0x00AC8497" }
+  },
+  {
+    "id": "nv-triplebuffer", "area": "NVIDIA", "match": "triplebuffering",
+    "name": "Dreifachpufferung", "kind": "enum",
+    "options": [ { "value": "0", "label": "Aus" }, { "value": "1", "label": "Ein" } ],
+    "description": "Dreifachpufferung — wirkt nur in OpenGL-Anwendungen, für MSFS (DirectX) ohne Effekt.",
+    "target": { "type": "nvidia", "settingId": "0x20FDD1F9" }
+  },
+  {
+    "id": "nv-gsync-profile", "area": "NVIDIA", "match": "enablegsyncglobally",
+    "name": "G-SYNC (Profil-Schalter)", "kind": "enum",
+    "options": [ { "value": "0", "label": "Aus" }, { "value": "1", "label": "Ein" } ],
+    "description": "G-SYNC-Freigabe auf Profilebene. Vorsicht: Interagiert mit der globalen G-SYNC-Einstellung des Treibers — nur ändern, wenn du weißt, warum.",
+    "target": { "type": "nvidia", "settingId": "0x1194F158" }
+  },
+  {
+    "id": "nv-dlss-sr-override", "area": "NVIDIA", "match": "enabledlsssroverride",
+    "name": "DLSS-SR-Override (Treiber ersetzt Spiel-DLL)", "kind": "enum",
+    "options": [ { "value": "0", "label": "Aus (Spiel-DLL)" }, { "value": "1", "label": "Ein (neueste Treiber-DLL)" } ],
+    "description": "Der Treiber ersetzt die DLSS-Super-Resolution-DLL des Spiels zur Laufzeit durch die aktuelle Version — der saubere Ersatz für DLL-Tausch-Tools wie DLSS Swapper, funktioniert auch mit der Store-Version und überlebt Sim-Updates.",
+    "target": { "type": "nvidia", "settingId": "0x10E41E01" }
+  },
+  {
+    "id": "nv-dlss-sr-preset", "area": "NVIDIA", "match": "overridedlsssrpresets",
+    "name": "DLSS-SR-Preset-Override", "kind": "enum",
+    "options": [
+      { "value": "0", "label": "Standard (Spiel/Treiber entscheidet)" },
+      { "value": "10", "label": "Preset J — Transformer (unbestätigt)" },
+      { "value": "11", "label": "Preset K — Transformer (unbestätigt)" },
+      { "value": "13", "label": "Preset M — neuestes Transformer-Modell" }
+    ],
+    "description": "Erzwingt ein bestimmtes DLSS-Rendermodell. Die Transformer-Presets (J/K/M) verbessern besonders Text- und Anzeigenschärfe — relevant für Glass-Cockpits. Wirkt nur mit aktivem SR-Override.",
+    "rangeNote": "Preset-Nummern jenseits des aktuell gesetzten Werts sind treiberabhängig.",
+    "target": { "type": "nvidia", "settingId": "0x10E41DF3" }
+  },
+  {
+    "id": "nv-dlss-fg-override", "area": "NVIDIA", "match": "enabledlssfgoverride",
+    "name": "DLSS-FG-Override (Frame Generation)", "kind": "enum",
+    "options": [ { "value": "0", "label": "Aus (Spiel-DLL)" }, { "value": "1", "label": "Ein (neueste Treiber-DLL)" } ],
+    "description": "Wie der SR-Override, aber für die Frame-Generation-DLL (nvngx_dlssg).",
+    "target": { "type": "nvidia", "settingId": "0x10E41E03" }
+  },
+  {
+    "id": "nv-dlss-fg-preset", "area": "NVIDIA", "match": "overridedlssfgpreset",
+    "name": "DLSS-FG-Preset-Override", "kind": "enum",
+    "options": [
+      { "value": "0", "label": "Standard" },
+      { "value": "16777214", "label": "Immer neueste Version" }
+    ],
+    "description": "Preset-Vorgabe für Frame Generation; „Immer neueste Version“ entspricht der NVIDIA-App-Einstellung „Latest“.",
+    "target": { "type": "nvidia", "settingId": "0x10E41DF1" }
+  },
+  {
+    "id": "nv-powermode", "area": "NVIDIA", "match": "powermanagementmode",
+    "name": "Energieverwaltungsmodus (MSFS-Profil)", "kind": "enum",
+    "options": [
+      { "value": "0", "label": "Adaptiv (Treiber-Standard)" },
+      { "value": "1", "label": "Maximale Leistung bevorzugen" }
+    ],
+    "description": "GPU-Taktverhalten im MSFS-Profil. „Maximale Leistung“ verhindert Heruntertakten in CPU-limitierten Phasen (Taktwechsel-Ruckler).",
+    "target": { "type": "nvidia", "settingId": "0x1057EB71" }
+  }
+]

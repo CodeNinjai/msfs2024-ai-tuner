@@ -1,0 +1,604 @@
+﻿[
+  {
+    "id": "win-backgroundrecording-off",
+    "category": "Windows",
+    "severity": "high",
+    "title": "Hintergrundaufzeichnung deaktivieren",
+    "conditions": [ { "fact": "win.historicalcapture", "op": "eq", "value": "Ein" } ],
+    "current": "{win.historicalcapture}",
+    "recommended": "Aus",
+    "reason": "„Aufzeichnen, was geschehen ist“ nimmt permanent im Hintergrund auf — das kostet GPU-Zeit, VRAM-Bandbreite und verursacht Frametime-Spitzen. Der größte einzelne DVR-Kostenpunkt.",
+    "applyHint": "Einstellungen → Spielen → Aufzeichnungen → „Aufzeichnen, was geschehen ist“ → Aus.",
+    "action": { "type": "reg", "hive": "HKCU", "path": "Software\\Microsoft\\Windows\\CurrentVersion\\GameDVR", "name": "HistoricalCaptureEnabled", "value": 0 }
+  },
+  {
+    "id": "win-gamedvr-off",
+    "category": "Windows",
+    "severity": "medium",
+    "title": "Game DVR Capture-Infrastruktur komplett deaktivieren",
+    "conditions": [ { "fact": "win.gamedvr", "op": "eq", "value": "Ein" } ],
+    "current": "{win.gamedvr}",
+    "recommended": "Aus",
+    "reason": "Auch ohne aktive Hintergrundaufzeichnung klinkt sich die DVR/Capture-Ebene in jedes Spiel ein (Capture-Hooks, Overlay-Bereitschaft). Windows 11 zeigt für diesen Master-Schalter keine Oberfläche mehr — deshalb bleibt er auf vielen Systemen unbemerkt aktiv. Vollständiges Deaktivieren entfernt den Rest-Overhead; danach sind Game-Bar-Aufnahmen nicht mehr möglich.",
+    "applyHint": "Registry: HKCU\\System\\GameConfigStore\\GameDVR_Enabled = 0 (per Anwenden-Button oder manuell).",
+    "action": { "type": "reg", "hive": "HKCU", "path": "System\\GameConfigStore", "name": "GameDVR_Enabled", "value": 0 },
+    "details": "Die drei Aufzeichnungs-Ebenen von Windows: (1) HistoricalCaptureEnabled = Hintergrund-Ringpuffer („Aufzeichnen, was geschehen ist“) — der teuerste Teil, in den Einstellungen sichtbar. (2) AppCaptureEnabled = die Game-Bar-Aufnahmefunktion. (3) GameDVR_Enabled = die darunterliegende Capture-Infrastruktur, die sich beim Spielstart in den Prozess hängt (Hooks, Overlay-Bereitschaft). Windows 11 zeigt nur noch Ebene 1 in der Oberfläche — 2 und 3 bleiben auf vielen Systemen unbemerkt aktiv. Nach dem Deaktivieren sind Game-Bar-Aufnahmen nicht mehr möglich; OBS & Co. sind davon unabhängig."
+  },
+  {
+    "id": "win-gamebar-capture-off",
+    "category": "Windows",
+    "severity": "medium",
+    "title": "App-Aufzeichnung (AppCapture) deaktivieren",
+    "conditions": [ { "fact": "win.gamebarcapture", "op": "eq", "value": "Ein" } ],
+    "current": "{win.gamebarcapture}",
+    "recommended": "Aus",
+    "reason": "Die Game-Bar-Capture-Pipeline läuft im Hintergrund mit und kann Overlay-Konflikte mit dem Sim und Add-on-Fenstern (EFBs) verursachen.",
+    "applyHint": "Einstellungen → Gaming → Aufzeichnungen → App-Aufzeichnung deaktivieren.",
+    "action": { "type": "reg", "hive": "HKCU", "path": "Software\\Microsoft\\Windows\\CurrentVersion\\GameDVR", "name": "AppCaptureEnabled", "value": 0 }
+  },
+  {
+    "id": "win-gamemode-on-x3d",
+    "category": "Windows",
+    "severity": "high",
+    "title": "Spielemodus aktivieren (wichtig für Dual-CCD X3D)",
+    "conditions": [
+      { "fact": "cpu.x3ddualccd", "op": "eq", "value": "1" },
+      { "fact": "win.gamemode", "op": "eq", "value": "Aus" }
+    ],
+    "current": "{win.gamemode}",
+    "recommended": "Ein",
+    "reason": "Deine CPU ({cpu.name}) hat den 3D-V-Cache nur auf einem der beiden CCDs. AMDs Treiber-Logik (3D V-Cache Performance Optimizer) nutzt den Windows-Spielemodus als Signal, um MSFS auf das V-Cache-CCD zu legen und das zweite CCD zu parken. Wichtig: Das Parken selbst ist Core-Parking des Energieplans — diese Empfehlung wirkt nur ZUSAMMEN mit dem Plan „Ausbalanciert“ (siehe Energieplan-Empfehlung). Beide als Paar anwenden.",
+    "applyHint": "Einstellungen → Gaming → Spielemodus → Ein. Zusätzlich AMD-Chipsatztreiber aktuell halten und Energieplan „Ausbalanciert“ setzen.",
+    "action": { "type": "reg", "hive": "HKCU", "path": "Software\\Microsoft\\GameBar", "name": "AutoGameModeEnabled", "value": 1 },
+    "details": "Die Wirkkette im Detail: Der Spielemodus signalisiert „ein Spiel läuft“ → der AMD-Dienst „3D V-Cache Performance Optimizer“ (Teil des Chipsatztreibers) reagiert → das Nicht-V-Cache-CCD wird über Core-Parking stillgelegt, sodass der Scheduler alle Sim-Threads auf das Cache-CCD legt. Ohne Spielemodus verteilt Windows die Threads über beide CCDs — jede CCD-übergreifende Kommunikation kostet Inter-Die-Latenz, und der Hauptthread verliert seine Cache-Lokalität. Kontrolle: Kern-Monitor auf der Benchmark-Seite — bei laufendem Sim sollte die erste Kernhälfte (CCD0) die Last tragen."
+  },
+  {
+    "id": "win-gamemode-on",
+    "category": "Windows",
+    "severity": "medium",
+    "title": "Spielemodus aktivieren",
+    "conditions": [
+      { "fact": "cpu.x3ddualccd", "op": "eq", "value": "0" },
+      { "fact": "cpu.hybrid", "op": "eq", "value": "0" },
+      { "fact": "win.gamemode", "op": "eq", "value": "Aus" }
+    ],
+    "current": "{win.gamemode}",
+    "recommended": "Ein",
+    "reason": "Der Spielemodus priorisiert das aktive Spiel bei CPU-Scheduling und unterdrückt Hintergrundaktivitäten (Updates, Benachrichtigungen).",
+    "applyHint": "Einstellungen → Gaming → Spielemodus → Ein.",
+    "action": { "type": "reg", "hive": "HKCU", "path": "Software\\Microsoft\\GameBar", "name": "AutoGameModeEnabled", "value": 1 }
+  },
+  {
+    "id": "win-gamemode-on-hybrid",
+    "category": "Windows",
+    "severity": "high",
+    "title": "Spielemodus aktivieren (wichtig für P/E-Kern-CPUs)",
+    "conditions": [
+      { "fact": "cpu.hybrid", "op": "eq", "value": "1" },
+      { "fact": "win.gamemode", "op": "eq", "value": "Aus" }
+    ],
+    "current": "{win.gamemode}",
+    "recommended": "Ein",
+    "reason": "Deine CPU ({cpu.name}) hat {cpu.pcores} Performance- und {cpu.ecores} Efficiency-Kerne. Der Spielemodus signalisiert Windows und dem Intel Thread Director, dass ein Spiel im Vordergrund läuft — die zeitkritischen Sim-Threads (v.a. der Mainthread) landen dann zuverlässig auf den schnellen P-Kernen, Hintergrundlast wandert auf die E-Kerne.",
+    "applyHint": "Einstellungen → Gaming → Spielemodus → Ein.",
+    "action": { "type": "reg", "hive": "HKCU", "path": "Software\\Microsoft\\GameBar", "name": "AutoGameModeEnabled", "value": 1 },
+    "details": "Hintergrund: Seit Alder Lake meldet die CPU dem Windows-Scheduler über den Thread Director laufend, welcher Thread von welchem Kerntyp profitiert. Der Spielemodus ist eines der stärksten Prioritätssignale dieser Kette. Landet der MSFS-Mainthread auf einem E-Kern, kostet das sofort spürbar FPS — kontrollierbar im Kern-Monitor auf der Benchmark-Seite: Bei laufendem Sim sollten die P-Kern-Balken (linke Gruppe) die Last tragen. Hartnäckige Fälle lassen sich dort per „Auf P-Kerne pinnen“ erzwingen und im A/B-Benchmark gegenmessen."
+  },
+  {
+    "id": "win-powerplan-balanced-x3d",
+    "category": "Windows",
+    "severity": "medium",
+    "title": "Energieplan „Ausbalanciert“ statt Höchstleistung (Dual-CCD X3D)",
+    "conditions": [
+      { "fact": "cpu.x3ddualccd", "op": "eq", "value": "1" },
+      { "fact": "win.powerplan.guid", "op": "in", "value": [ "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c", "e9a42b02-d5df-448d-aa00-03f14749eb61" ] }
+    ],
+    "current": "{win.powerplan}",
+    "recommended": "Ausbalanciert",
+    "reason": "Höchstleistung unterbindet das Core-Parking. AMDs CCD-Steuerung für Dual-CCD-X3D-CPUs parkt aber gezielt das Nicht-V-Cache-CCD, während das Spiel läuft — das funktioniert nur mit dem Plan „Ausbalanciert“ (plus Spielemodus und aktuellem Chipsatztreiber). Mit Höchstleistung verteilt Windows die Threads über beide CCDs.",
+    "applyHint": "Systemsteuerung → Energieoptionen → „Ausbalanciert“ wählen.",
+    "action": { "type": "powerplan", "guid": "381b4222-f694-41f0-9685-ff5bb260df2e" },
+    "details": "Technischer Hintergrund: Core-Parking ist eine Energieplan-Richtlinie (CPMINCORES, „minimale Anzahl aktiver Kerne“). Höchstleistung setzt sie auf 100 % — kein Kern darf jemals parken, die CCD-Steuerung läuft ins Leere. „Ausbalanciert“ erlaubt Parken, und moderne Ryzen boosten darunter trotzdem voll auf Maximaltakt — ein messbarer Leistungsverlust durch den Plan existiert auf Zen 4/5 praktisch nicht. Der gefühlte Vorteil von Höchstleistung stammt aus der Ära, als Balanced noch träge hochtaktete."
+  },
+  {
+    "id": "win-powerplan-highperf",
+    "category": "Windows",
+    "severity": "medium",
+    "title": "Energieplan auf Höchstleistung stellen",
+    "conditions": [
+      { "fact": "cpu.x3ddualccd", "op": "eq", "value": "0" },
+      { "fact": "cpu.hybrid", "op": "eq", "value": "0" },
+      { "fact": "win.powerplan.guid", "op": "nin", "value": [ "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c", "e9a42b02-d5df-448d-aa00-03f14749eb61" ] }
+    ],
+    "current": "{win.powerplan}",
+    "recommended": "Höchstleistung",
+    "reason": "Der Sparplan bzw. „Ausbalanciert“ taktet Kerne im Teillastbereich herunter — MSFS ist stark hauptthread-limitiert und profitiert von konstant hohen Taktraten.",
+    "applyHint": "Systemsteuerung → Energieoptionen → „Höchstleistung“ (ggf. über powercfg -duplicatescheme freischalten).",
+    "action": { "type": "powerplan", "guid": "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c" }
+  },
+  {
+    "id": "win-powerplan-balanced-hybrid",
+    "category": "Windows",
+    "severity": "medium",
+    "title": "Energieplan „Ausbalanciert“ statt Höchstleistung (P/E-Kern-CPU)",
+    "conditions": [
+      { "fact": "cpu.hybrid", "op": "eq", "value": "1" },
+      { "fact": "win.powerplan.guid", "op": "in", "value": [ "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c", "e9a42b02-d5df-448d-aa00-03f14749eb61" ] }
+    ],
+    "current": "{win.powerplan}",
+    "recommended": "Ausbalanciert",
+    "reason": "Höchstleistung unterbindet das Core-Parking und die feine Takt-/Kernsteuerung, mit der Windows auf Hybrid-CPUs ({cpu.pcores} P- + {cpu.ecores} E-Kerne) arbeitet. Intel empfiehlt für 12th Gen+ ausdrücklich „Ausbalanciert“ — der Thread Director steuert damit am präzisesten, und die P-Kerne boosten trotzdem voll.",
+    "applyHint": "Systemsteuerung → Energieoptionen → „Ausbalanciert“ wählen.",
+    "action": { "type": "powerplan", "guid": "381b4222-f694-41f0-9685-ff5bb260df2e" },
+    "details": "Der gefühlte Vorteil von „Höchstleistung“ stammt aus der Zeit träger Taktwechsel. Moderne Hybrid-CPUs takten unter „Ausbalanciert“ in Mikrosekunden hoch; gleichzeitig darf Windows unbeschäftigte E-Kerne parken und Hintergrund-Threads gezielt dorthin verschieben. Unter Höchstleistung bleiben alle Kerne dauerhaft aktiv — das kostet Energiebudget (Boost-Spielraum der P-Kerne!) und verwässert die Thread-Zuordnung. Messbar per A/B-Benchmark."
+  },
+  {
+    "id": "win-hags-on-for-fg",
+    "category": "Windows",
+    "severity": "high",
+    "title": "HAGS aktivieren — Voraussetzung für Frame Generation",
+    "conditions": [
+      { "fact": "msfs.cfg.video.framegeneration", "op": "ne", "value": "NONE" },
+      { "fact": "win.hags", "op": "ne", "value": "Ein" }
+    ],
+    "current": "{win.hags}",
+    "recommended": "Ein",
+    "reason": "In MSFS ist Frame Generation ({msfs.cfg.video.framegeneration}) aktiviert — DLSS Frame Generation funktioniert nur mit hardwarebeschleunigter GPU-Planung (HAGS). Ohne HAGS bleibt die Option wirkungslos.",
+    "applyHint": "Einstellungen → System → Anzeige → Grafik → Standardgrafikeinstellungen → Hardwarebeschleunigte GPU-Planung → Ein, danach Neustart.",
+    "action": { "type": "reg", "hive": "HKLM", "path": "SYSTEM\\CurrentControlSet\\Control\\GraphicsDrivers", "name": "HwSchMode", "value": 2, "reboot": true }
+  },
+  {
+    "id": "win-hvci-tradeoff",
+    "category": "Windows",
+    "severity": "info",
+    "title": "Speicherintegrität (HVCI): Leistungs-Kompromiss bewusst wählen",
+    "conditions": [ { "fact": "win.hvci", "op": "eq", "value": "Ein" } ],
+    "current": "Ein",
+    "recommended": "Bewusste Abwägung (Sicherheit vs. ~2–5 % CPU-Leistung)",
+    "reason": "Die virtualisierungsbasierte Speicherintegrität kostet je nach CPU einige Prozent Leistung, erhöht aber den Schutz vor Treiber-Exploits. Für maximale Sim-Performance kann sie deaktiviert werden — das ist eine Sicherheitsentscheidung, keine reine Performance-Einstellung.",
+    "applyHint": "Einstellungen → Datenschutz und Sicherheit → Windows-Sicherheit → Gerätesicherheit → Kernisolierung."
+  },
+  {
+    "id": "win-mpo-restore",
+    "category": "Windows",
+    "severity": "info",
+    "title": "Multiplane Overlay (MPO) wieder aktivieren",
+    "conditions": [ { "fact": "win.mpo", "op": "eq", "value": "Deaktiviert" } ],
+    "current": "Deaktiviert (OverlayTestMode=5)",
+    "recommended": "Standard (aktiv)",
+    "reason": "Der alte MPO-Workaround stammt aus einer Zeit fehlerhafter Treiber. Auf aktuellen Systemen kostet deaktiviertes MPO Effizienz bei Borderless-Fullscreen und kann VRR-Probleme verursachen.",
+    "applyHint": "Registry-Wert HKLM\\SOFTWARE\\Microsoft\\Windows\\Dwm\\OverlayTestMode löschen und neu starten.",
+    "action": { "type": "regdelete", "hive": "HKLM", "path": "SOFTWARE\\Microsoft\\Windows\\Dwm", "name": "OverlayTestMode", "reboot": true }
+  },
+  {
+    "id": "hw-ram-single-channel",
+    "category": "Hardware",
+    "severity": "high",
+    "title": "RAM läuft im Single-Channel-Modus",
+    "conditions": [ { "fact": "ram.modules", "op": "eq", "value": 1 } ],
+    "current": "1 Modul ({ram.gb} GB)",
+    "recommended": "2 Module (Dual Channel)",
+    "reason": "Single-Channel halbiert die Speicherbandbreite — MSFS reagiert darauf besonders stark (Streaming, Haupt-Thread).",
+    "applyHint": "Zweites identisches RAM-Modul nachrüsten."
+  },
+  {
+    "id": "hw-ram-lt32",
+    "category": "Hardware",
+    "severity": "medium",
+    "title": "Wenig Arbeitsspeicher für MSFS 2024",
+    "conditions": [ { "fact": "ram.gb", "op": "lt", "value": 32 } ],
+    "current": "{ram.gb} GB",
+    "recommended": "32 GB oder mehr",
+    "reason": "MSFS 2024 mit Foto-Szenerien und komplexen Add-on-Flugzeugen belegt regelmäßig 20–30 GB. Zu wenig RAM führt zu Nachladerucklern und Auslagerung.",
+    "applyHint": "RAM aufrüsten; bis dahin Hintergrundprogramme (Browser!) vor dem Simstart schließen."
+  },
+  {
+    "id": "hw-rebar-off",
+    "category": "Hardware",
+    "severity": "high",
+    "title": "Resizable BAR aktivieren",
+    "conditions": [
+      { "fact": "gpu.isnvidia", "op": "eq", "value": "1" },
+      { "fact": "gpu.rebar", "op": "eq", "value": "Inaktiv" }
+    ],
+    "current": "Inaktiv (BAR1 klein)",
+    "recommended": "Aktiv",
+    "reason": "Mit Resizable BAR adressiert die CPU den gesamten VRAM direkt — das beschleunigt gerade das Textur-/Szenerie-Streaming von MSFS spürbar.",
+    "applyHint": "BIOS: „Above 4G Decoding“ + „Resizable BAR“ aktivieren; anschließend im NVIDIA Profile Inspector im MSFS-Profil „rBAR - Enable“ prüfen."
+  },
+  {
+    "id": "msfs-packages-hdd",
+    "category": "MSFS",
+    "severity": "high",
+    "title": "MSFS-Pakete liegen auf einer HDD",
+    "conditions": [ { "fact": "msfs.packages.media", "op": "eq", "value": "HDD" } ],
+    "current": "{msfs.packages.path} ({msfs.packages.media})",
+    "recommended": "Auf SSD/NVMe verschieben",
+    "reason": "Szenerie- und Flugzeug-Streaming von einer HDD verursacht massive Nachladeruckler und lange Ladezeiten.",
+    "applyHint": "Im Sim: Optionen → Allgemein → Daten → Installationspfad auf eine SSD legen (oder Ordner verschieben und InstalledPackagesPath in UserCfg.opt anpassen)."
+  },
+  {
+    "id": "msfs-packages-space",
+    "category": "MSFS",
+    "severity": "info",
+    "title": "Wenig freier Speicher auf dem Paket-Laufwerk",
+    "conditions": [ { "fact": "msfs.packages.freegb", "op": "lt", "value": 50 } ],
+    "current": "{msfs.packages.freegb} GB frei auf {msfs.packages.drive}",
+    "recommended": "≥ 50 GB frei halten",
+    "reason": "Sim-Updates und World-Updates brauchen temporär viel Platz; volle SSDs werden zudem langsamer.",
+    "applyHint": "Nicht genutzte Add-ons oder andere Daten vom Laufwerk {msfs.packages.drive} entfernen."
+  },
+  {
+    "id": "msfs-rollingcache-enable",
+    "category": "MSFS",
+    "severity": "medium",
+    "title": "Rolling Cache aktivieren",
+    "conditions": [
+      { "fact": "msfs.installed", "op": "eq", "value": "1" },
+      { "fact": "cache.rolling.exists", "op": "eq", "value": "0" }
+    ],
+    "current": "Nicht konfiguriert",
+    "recommended": "16–64 GB auf einer SSD/NVMe",
+    "reason": "Der Rolling Cache hält gestreamte Foto-Szenerie lokal vor — weniger Bandbreitenbedarf, gleichmäßigeres Streaming und schnellere wiederholte Flüge über dieselben Gebiete.",
+    "applyHint": "Im Sim: Optionen → Allgemein → Daten → Rolling Cache aktivieren und Größe/Ort festlegen."
+  },
+  {
+    "id": "msfs-rollingcache-hdd",
+    "category": "MSFS",
+    "severity": "medium",
+    "title": "Rolling Cache liegt auf einer HDD",
+    "conditions": [ { "fact": "cache.rolling.media", "op": "eq", "value": "HDD" } ],
+    "current": "{cache.rolling.path} ({cache.rolling.media})",
+    "recommended": "Auf SSD/NVMe verschieben",
+    "reason": "Ein Cache auf einer HDD kann langsamer sein als das erneute Streamen aus dem Netz — er kehrt seinen Zweck um.",
+    "applyHint": "Im Sim: Optionen → Allgemein → Daten → Rolling-Cache-Pfad auf eine SSD ändern."
+  },
+  {
+    "id": "msfs-vsync-off",
+    "category": "MSFS",
+    "severity": "info",
+    "title": "VSync im Sim prüfen",
+    "conditions": [
+      { "fact": "msfs.cfg.video.vsync", "op": "eq", "value": 1 },
+      { "fact": "msfs.cfg.video.framegeneration", "op": "eq", "value": "NONE" }
+    ],
+    "current": "VSync im Sim: Ein (FrameLimiter {msfs.cfg.video.framelimiter})",
+    "recommended": "Cap-Strategie prüfen (VSync-Bruchteil vs. FPS-Limit)",
+    "reason": "VSync mit Intervall 1/2 oder 1/3 der Bildwiederholrate ({display.hz} Hz) ist in MSFS eine legitime Cap-Strategie für konstante Frametimes — gerade mit Frame Generation (Basis-FPS × Multiplikator). Alternative mit weniger Latenz: VSync im Sim aus, G-Sync + FPS-Limit knapp unter der Monitor-Hz (Treiber oder Sim-Limiter). Welche Variante ruhiger läuft, zeigt der A/B-Benchmark.",
+    "applyHint": "Im Sim: Optionen → Allgemein → Grafik → VSync/V-Sync-Intervall bzw. Maximale Framerate."
+  },
+  {
+    "id": "msfs-taa-highres",
+    "category": "MSFS",
+    "severity": "medium",
+    "title": "TAA bei hoher Auflösung: DLSS Super Resolution testen",
+    "conditions": [
+      { "fact": "msfs.cfg.video.antialiasing", "op": "eq", "value": "TAA" },
+      { "fact": "display.width", "op": "gte", "value": 3840 },
+      { "fact": "gpu.isnvidia", "op": "eq", "value": "1" }
+    ],
+    "current": "TAA @ {display.width}×{display.height} (Render-Skalierung {msfs.cfg.video.primaryscaling})",
+    "recommended": "Anti-Aliasing „DLSS“, Modus Quality (per Benchmark vergleichen)",
+    "reason": "TAA rendert in voller nativer Auflösung — bei {display.width}×{display.height} ist das der größte einzelne GPU-Kostenpunkt. DLSS Quality (aktuelles Transformer-Modell) rendert intern niedriger bei kaum sichtbarem Unterschied und hebt die Basis-FPS deutlich — davon profitiert auch die aktive Frame Generation. Verwaschene Glass-Cockpit-Anzeigen waren ein Problem der alten CNN-Modelle; mit aktivem DLSS-4-Preset-Override (Transformer, siehe NVIDIA-Seite) ist die Anzeigen-Schärfe deutlich besser. A/B-Benchmark lohnt sich.",
+    "applyHint": "Im Sim: Optionen → Allgemein → Grafik → Anti-Aliasing auf NVIDIA DLSS stellen, DLSS-Modus Qualität.",
+    "details": "Rechenbeispiel: Bei {display.width}×{display.height} rastert TAA ~11 Mio. Pixel pro Frame. DLSS Quality rendert intern mit Faktor 0,667 pro Achse — knapp 5 Mio. Pixel, also weniger als die halbe Rasterlast, bevor die KI auf native Auflösung rekonstruiert. Härtester Fall bleiben Instrumententexte: mit dem Transformer-Preset (Treiber-Override aktiv) deutlich besser als früher, aber einen Hauch weicher als nativ. Wer maximale Anzeigen-Schärfe will, nimmt DLAA (native Auflösung + DLSS-Kantenglättung) oder einen Custom-Ratio-Override zwischen 0,67 und 1,0 über die NVIDIA App."
+  },
+  {
+    "id": "msfs-dlaa-highres",
+    "category": "MSFS",
+    "severity": "info",
+    "title": "DLAA bei hoher Auflösung: DLSS Quality testen",
+    "conditions": [
+      { "fact": "msfs.cfg.video.antialiasing", "op": "eq", "value": "DLSS" },
+      { "fact": "msfs.cfg.video.dlssmode", "op": "eq", "value": "DLAA" },
+      { "fact": "display.width", "op": "gte", "value": 3840 }
+    ],
+    "current": "DLAA @ {display.width}×{display.height}",
+    "recommended": "DLSS Quality (Vergleich per Benchmark)",
+    "reason": "DLAA rendert in nativer Auflösung — bei {display.width}×{display.height} ist das extrem GPU-teuer. DLSS Quality sieht bei dieser Pixeldichte fast identisch aus und schafft deutlich mehr Basis-FPS. Wenn die GPU-Reserven reichen, ist DLAA die beste Bildqualität — messen lohnt sich.",
+    "applyHint": "Im Sim: Optionen → Allgemein → Grafik → DLSS-Modus → Qualität."
+  },
+  {
+    "id": "msfs-texture-vram",
+    "category": "MSFS",
+    "severity": "medium",
+    "title": "Texturauflösung Ultra bei knappem VRAM",
+    "conditions": [
+      { "fact": "msfs.cfg.graphics.texture.quality", "op": "eq", "value": 0 },
+      { "fact": "gpu.vrammb", "op": "lt", "value": 12288 }
+    ],
+    "current": "Ultra ({gpu.vrammb} MB VRAM)",
+    "recommended": "Hoch",
+    "reason": "Ultra-Texturen belegen in MSFS 2024 mit Add-on-Flugzeugen schnell mehr VRAM als die Karte hat — die Folge sind Streaming-Ruckler und unscharfe Texturen durch VRAM-Verdrängung. Mit unter 12 GB ist „Hoch“ der stabilere Betriebspunkt. (Hinweis: Dieser Wert ist in der UserCfg invertiert — 0=Ultra, 3=Niedrig.)",
+    "applyHint": "Im Sim: Optionen → Allgemein → Grafik → Texturauflösung → Hoch.",
+    "action": { "type": "msfs", "section": "Graphics/Texture", "key": "Quality", "value": "1" }
+  },
+  {
+    "id": "msfs-terrain-lod-cpu",
+    "category": "MSFS",
+    "severity": "info",
+    "title": "Sehr hoher Terrain-LOD ist stark CPU-lastig",
+    "conditions": [ { "fact": "msfs.cfg.graphics.terrain.lodfactor", "op": "gte", "value": 3 } ],
+    "current": "Terrain LoDFactor {msfs.cfg.graphics.terrain.lodfactor} (≥ 300)",
+    "recommended": "≤ 200–250, per Benchmark abstimmen",
+    "reason": "Terrain-LOD skaliert vor allem den Haupt-Thread. Über ~200 steigen die Kosten stark, der sichtbare Gewinn wird klein — häufigste Ursache für „Mainthread limited“ in Ballungsräumen.",
+    "applyHint": "Im Sim: Optionen → Allgemein → Grafik → Detailgrad des Geländes."
+  },
+  {
+    "id": "nvidia-powermode-set",
+    "category": "NVIDIA",
+    "severity": "medium",
+    "title": "Energieverwaltung im MSFS-Profil auf maximale Leistung",
+    "conditions": [
+      { "fact": "nvidia.msfsprofile", "op": "eq", "value": "1" },
+      { "fact": "nvidia.msfs.powermanagementmode", "op": "exists" },
+      { "fact": "nvidia.msfs.powermanagementmode", "op": "ne", "value": 1 }
+    ],
+    "current": "Power management mode = {nvidia.msfs.powermanagementmode}",
+    "recommended": "Prefer maximum performance (1)",
+    "reason": "Verhindert das Heruntertakten der GPU in CPU-limitierten Phasen (Parken am Gate, Menüs) und damit Taktwechsel-Ruckler.",
+    "applyHint": "NVIDIA App/Systemsteuerung → 3D-Einstellungen → Programm „Microsoft Flight Simulator 2024“ → Energieverwaltungsmodus.",
+    "action": { "type": "nvidia", "settingId": "0x1057EB71", "value": 1 }
+  },
+  {
+    "id": "nvidia-powermode-missing",
+    "category": "NVIDIA",
+    "severity": "info",
+    "title": "Energieverwaltung im MSFS-Profil setzen",
+    "conditions": [
+      { "fact": "nvidia.msfsprofile", "op": "eq", "value": "1" },
+      { "fact": "nvidia.msfs.powermanagementmode", "op": "nexists" }
+    ],
+    "current": "Treiber-Standard (adaptiv)",
+    "recommended": "Prefer maximum performance",
+    "reason": "Der adaptive Standard taktet die GPU in CPU-limitierten Phasen herunter; ein fixes Maximum vermeidet Taktwechsel-Ruckler im Sim.",
+    "applyHint": "NVIDIA App/Systemsteuerung → 3D-Einstellungen → Programm „Microsoft Flight Simulator 2024“ → Energieverwaltungsmodus.",
+    "action": { "type": "nvidia", "settingId": "0x1057EB71", "value": 1 }
+  },
+  {
+    "id": "nvidia-shadercache-limited",
+    "category": "NVIDIA",
+    "severity": "info",
+    "title": "Shader-Cache-Größe erhöhen",
+    "conditions": [
+      { "fact": "nvidia.msfsprofile", "op": "eq", "value": "1" },
+      { "fact": "nvidia.msfs.shaderdiskcachemaximumsize", "op": "exists" },
+      { "fact": "nvidia.msfs.shaderdiskcachemaximumsize", "op": "lt", "value": 4294967295 }
+    ],
+    "current": "Begrenzt ({nvidia.msfs.shaderdiskcachemaximumsize})",
+    "recommended": "Unbegrenzt (oder ≥ 10 GB)",
+    "reason": "MSFS kompiliert sehr viele Shader. Ein zu kleiner Cache wird zyklisch verdrängt — Shader werden neu kompiliert und verursachen Ruckler.",
+    "applyHint": "NVIDIA Profile Inspector → MSFS-Profil → „Shader Cache - Cache Size“ → Unlimited."
+  },
+  {
+    "id": "cpu-x3d-dualccd-pinning",
+    "category": "Hardware",
+    "severity": "info",
+    "title": "Dual-CCD X3D: CCD-Zuordnung im Blick behalten",
+    "conditions": [ { "fact": "cpu.x3ddualccd", "op": "eq", "value": "1" } ],
+    "current": "{cpu.name} ({cpu.cores} Kerne, L3 {cpu.l3mb} MB)",
+    "recommended": "MSFS auf dem V-Cache-CCD betreiben",
+    "reason": "Ob MSFS wirklich auf dem V-Cache-CCD läuft, hängt von Chipsatztreiber, Spielemodus und dem „3D V-Cache Performance Optimizer“ ab. Kontrolle: Task-Manager/HWiNFO — die erste Kernhälfte sollte unter Last stehen. Stufe 2 dieses Tools wird die Prozess-Affinität automatisch setzen und per Benchmark validieren.",
+    "applyHint": "AMD-Chipsatztreiber aktuell halten; alternativ manuell via Process Lasso oder Task-Manager-Affinität testen."
+  },
+  {
+    "id": "cpu-hybrid-pinning",
+    "category": "Hardware",
+    "severity": "info",
+    "title": "P/E-Kern-CPU: Thread-Zuordnung im Blick behalten",
+    "conditions": [ { "fact": "cpu.hybrid", "op": "eq", "value": "1" } ],
+    "current": "{cpu.name} ({cpu.pcores} P-Kerne + {cpu.ecores} E-Kerne)",
+    "recommended": "MSFS-Threads auf den P-Kernen betreiben",
+    "reason": "Auf Hybrid-CPUs entscheidet der Intel Thread Director, welche Threads auf P- und welche auf E-Kernen laufen. Meist funktioniert das gut (Voraussetzung: Windows 11, Spielemodus an, Energieplan „Ausbalanciert“) — landet der Mainthread aber doch auf einem E-Kern, kostet das direkt FPS. Kontrolle: Kern-Monitor auf der Benchmark-Seite; dort lässt sich der Sim testweise per Klick auf die P-Kerne pinnen und der Effekt im A/B-Benchmark messen.",
+    "applyHint": "Benchmark-Seite → Kern-Monitor starten → bei Bedarf „Auf P-Kerne pinnen“ (wirkt bis zum Sim-Neustart, gefahrlos)."
+  },
+  {
+    "id": "tuning-aniso-16",
+    "category": "Tuning",
+    "severity": "info",
+    "title": "Anisotrope Filterung auf 16x anheben",
+    "conditions": [ { "fact": "msfs.cfg.graphics.texture.maxanisotropy", "op": "lt", "value": 16 } ],
+    "current": "{msfs.cfg.graphics.texture.maxanisotropy}x",
+    "recommended": "16x",
+    "reason": "Deutlich schärfere Texturen bei flachen Blickwinkeln (Landebahnen, Rollwege) — auf modernen GPUs praktisch kostenlos.",
+    "applyHint": "MSFS-Seite → Anisotrope Filterung → 16x.",
+    "action": { "type": "msfs", "section": "Graphics/Texture", "key": "MaxAnisotropy", "value": "16" }
+  },
+  {
+    "id": "tuning-texture-ultra",
+    "category": "Tuning",
+    "severity": "info",
+    "title": "VRAM-Spielraum: Texturauflösung kann auf Ultra",
+    "conditions": [
+      { "fact": "gpu.vrammb", "op": "gte", "value": 16384 },
+      { "fact": "msfs.cfg.graphics.texture.quality", "op": "gt", "value": 0 }
+    ],
+    "current": "Nicht Ultra ({gpu.vrammb} MB VRAM verfügbar)",
+    "recommended": "Ultra (Wert 0 — invertierte Skala)",
+    "reason": "Mit 16 GB+ VRAM ist Ultra sicher — Texturauflösung kostet fast keine FPS, nur VRAM. Sichtbarster Qualitätsgewinn pro Kosten.",
+    "applyHint": "MSFS-Seite → Texturauflösung → Ultra.",
+    "action": { "type": "msfs", "section": "Graphics/Texture", "key": "Quality", "value": "0" }
+  },
+  {
+    "id": "tuning-clouds-up",
+    "category": "Tuning",
+    "severity": "info",
+    "title": "GPU-Spielraum: Volumetrische Wolken höher testen",
+    "conditions": [
+      { "fact": "gpu.vrammb", "op": "gte", "value": 20000 },
+      { "fact": "msfs.cfg.graphics.volumetricclouds.quality", "op": "lt", "value": 3 }
+    ],
+    "current": "Stufe {msfs.cfg.graphics.volumetricclouds.quality}",
+    "recommended": "Ultra (3) — per Benchmark gegentesten",
+    "reason": "Deine GPU-Klasse hat typischerweise Reserven für Ultra-Wolken — einer der sichtbarsten Qualitätssprünge im Sim. FPS-Impact: sehr hoch, daher messen.",
+    "applyHint": "MSFS-Seite → Volumetrische Wolken → Ultra; danach A/B-Benchmark.",
+    "action": { "type": "msfs", "section": "Graphics/VolumetricClouds", "key": "Quality", "value": "3" }
+  },
+  {
+    "id": "tuning-clouds-down",
+    "category": "Tuning",
+    "severity": "medium",
+    "title": "Volumetrische Wolken: Ultra ist für diese GPU teuer",
+    "conditions": [
+      { "fact": "gpu.vrammb", "op": "lt", "value": 10000 },
+      { "fact": "msfs.cfg.graphics.volumetricclouds.quality", "op": "gte", "value": 3 }
+    ],
+    "current": "Ultra (3)",
+    "recommended": "Hoch (2)",
+    "reason": "Ultra-Wolken sind einer der größten GPU-Kostenpunkte. Auf Karten unter 10 GB VRAM bringt Hoch statt Ultra oft 10 %+ FPS bei moderatem Qualitätsverlust.",
+    "applyHint": "MSFS-Seite → Volumetrische Wolken → Hoch.",
+    "action": { "type": "msfs", "section": "Graphics/VolumetricClouds", "key": "Quality", "value": "2" }
+  },
+  {
+    "id": "tuning-ssao-up",
+    "category": "Tuning",
+    "severity": "info",
+    "title": "GPU-Spielraum: Umgebungsverdeckung (SSAO) höher testen",
+    "conditions": [
+      { "fact": "gpu.vrammb", "op": "gte", "value": 16384 },
+      { "fact": "msfs.cfg.graphics.ssao.quality", "op": "lt", "value": 2 }
+    ],
+    "current": "Stufe {msfs.cfg.graphics.ssao.quality}",
+    "recommended": "Hoch (2) — per Benchmark gegentesten",
+    "reason": "SSAO auf Hoch verbessert die Tiefenwirkung im Cockpit spürbar; auf starken GPUs moderater Kostenpunkt.",
+    "applyHint": "MSFS-Seite → Umgebungsverdeckung → Hoch; danach A/B-Benchmark.",
+    "action": { "type": "msfs", "section": "Graphics/SSAO", "key": "Quality", "value": "2" }
+  },
+  {
+    "id": "tuning-terrainlod-x3d",
+    "category": "Tuning",
+    "severity": "info",
+    "title": "CPU-Spielraum: Terrain-LOD kann höher (X3D-CPU)",
+    "conditions": [
+      { "fact": "cpu.x3d", "op": "eq", "value": "1" },
+      { "fact": "msfs.cfg.graphics.terrain.lodfactor", "op": "lt", "value": 1.5 }
+    ],
+    "current": "LoDFactor {msfs.cfg.graphics.terrain.lodfactor} (unter 150)",
+    "recommended": "1.50–2.00 (150–200) — per Benchmark gegentesten",
+    "reason": "Der 3D-V-Cache deiner CPU ({cpu.name}) puffert genau die Datenstrukturen, die Terrain-LOD teuer machen — X3D-CPUs verkraften hier deutlich mehr Sichtweite als üblich. FPS-Impact: sehr hoch, daher messen.",
+    "applyHint": "MSFS-Seite → Detailgrad des Geländes → z.B. 1.5 setzen; danach A/B-Benchmark.",
+    "action": { "type": "msfs", "section": "Graphics/Terrain", "key": "LoDFactor", "value": "1.500000" },
+    "details": "Warum X3D hier besonders profitiert: Terrain-LOD skaliert die Quadtree-Traversierung und den Szenegraph auf dem Hauptthread — zeigerlastige Datenstrukturen, deren Working-Set genau in den 96-MB-V-Cache passt. Auf X3D-CPUs kostet dieselbe LOD-Stufe dadurch spürbar weniger Mainthread-Zeit als auf gleichgetakteten Nicht-X3D-Modellen. Vorgehen: 1.5 setzen → Benchmark in fordernder Szenerie (großer Airport) → wenn der stärkste Thread im Kern-Monitor unter ~85 % bleibt, 2.0 probieren."
+  },
+  {
+    "id": "konflikt-cap-kette-fg",
+    "category": "Konflikt",
+    "severity": "medium",
+    "title": "Cap-Kette aufräumen: Frame Generation + G-Sync sauber verkabeln",
+    "conditions": [
+      { "fact": "msfs.cfg.video.framegeneration", "op": "ne", "value": "NONE" },
+      { "fact": "msfs.cfg.video.vsync", "op": "eq", "value": 1 }
+    ],
+    "current": "Sim-VSync Ein (Intervall-Cap) · FrameLimiter {msfs.cfg.video.framelimiter} · Dynamische Einstellungen {msfs.cfg.video.dynamicsettings} · Treiber-VSync-Code {nvidia.msfs.verticalsync}",
+    "recommended": "Genau ein Limiter: FrameLimiter {msfs.cfg.video.framelimiter} (Basis) · Sim-VSync aus · Treiber-VSync Ein · Dynamik aus",
+    "reason": "Mit Frame Generation gilt NVIDIAs Referenz-Kette: G-Sync + VSync im TREIBER erzwungen (sauberes Frame-Pacing im VRR-Band), VSync im SIM aus, und die Basis-FPS über genau EINEN Limiter — deinen FrameLimiter {msfs.cfg.video.framelimiter}, Ausgabe = ×2 durch FG. Sim-VSync-Intervalle und Dynamische Einstellungen sind zusätzliche Regler, die gegen den Limiter arbeiten und Pacing-Ruckler erzeugen; Reflex (von FG erzwungen) hält die Ausgabe automatisch unter der Monitor-Hz.",
+    "applyHint": "Der Anwenden-Button setzt alle drei Werte in einem Schritt: Sim-VSync aus, Dynamische Einstellungen aus, Treiber-VSync auf „Ein (erzwungen)“. Sim muss dafür geschlossen sein. FrameLimiter bleibt dein Basis-Regler (aktuell {msfs.cfg.video.framelimiter} → {msfs.cfg.video.framelimiter}×2 ausgegeben).",
+    "action": { "type": "multi", "actions": [
+      { "type": "msfs", "section": "Video", "key": "VSync", "value": "0" },
+      { "type": "msfs", "section": "Video", "key": "DynamicSettings", "value": "0" },
+      { "type": "nvidia", "settingId": "0x00A879CF", "value": 1199458624 }
+    ] },
+    "details": "Warum Treiber-VSync statt Sim-VSync: Der Treiber synchronisiert NACH der Frame-Generation-Stufe und arbeitet mit G-Sync zusammen (verhindert Tearing am oberen Rand des VRR-Bands), während Sim-VSync mitten in der Render-Kette sitzt und die Basis-Frames quantisiert — mit FG entstehen daraus ungleichmäßige Frame-Abstände. Reflex (von FG erzwungen) limitiert die Ausgabe zusätzlich automatisch knapp unter der Monitor-Hz und hält sie im VRR-Band. Das entspricht NVIDIAs offizieller Empfehlung für Frame Generation mit G-Sync. „Dynamische Einstellungen“ fliegen mit raus, weil sie als dritter Regler unbemerkt deine Grafikdetails verändern — fatal für reproduzierbare Benchmarks."
+  },
+  {
+    "id": "konflikt-vsync-doppelt",
+    "category": "Konflikt",
+    "severity": "medium",
+    "title": "Doppeltes VSync-Cap: NVIDIA-Profil und Sim cappen gleichzeitig",
+    "conditions": [
+      { "fact": "nvidia.msfs.verticalsync", "op": "exists" },
+      { "fact": "nvidia.msfs.verticalsync", "op": "ne", "value": 1620054674 },
+      { "fact": "msfs.cfg.video.vsync", "op": "eq", "value": 1 },
+      { "fact": "msfs.cfg.video.framegeneration", "op": "eq", "value": "NONE" }
+    ],
+    "current": "Treiber-VSync erzwungen (Code {nvidia.msfs.verticalsync}) + Sim-VSync Ein",
+    "recommended": "Nur eine Cap-Instanz — Treiber auf „Anwendungsgesteuert“",
+    "reason": "Das NVIDIA-Profil erzwingt ein eigenes VSync-Intervall (z.B. 845218372 = 1/2 Bildwiederholrate), während der Sim zusätzlich per VSync cappt. Zwei konkurrierende Caps ergeben inkonsistentes Frame-Pacing — welcher greift, ist modusabhängig. Üblich: Treiber auf Anwendungsgesteuert stellen und nur im Sim cappen (oder umgekehrt), dann per A/B-Benchmark vergleichen.",
+    "applyHint": "NVIDIA-Seite → „Vertikale Synchronisierung (Treiber)“ → Anwendungsgesteuert; alternativ Sim-VSync aus.",
+    "action": { "type": "nvidia", "settingId": "0x00A879CF", "value": 1620054674 }
+  },
+  {
+    "id": "tuning-treiber-cap-halbe-hz",
+    "category": "Tuning",
+    "severity": "medium",
+    "title": "Kein FPS-Cap aktiv — Treiber-VSync „1/2 Bildwiederholrate“ testen ({display.hz} Hz → {display.hz.half} FPS)",
+    "conditions": [
+      { "fact": "nvidia.msfsprofile", "op": "eq", "value": "1" },
+      { "fact": "msfs.cfg.video.vsync", "op": "eq", "value": 0 },
+      { "fact": "msfs.cfg.video.framelimiter", "op": "eq", "value": 0 },
+      { "fact": "nvidia.msfs.verticalsync", "op": "ne", "value": 845218372 },
+      { "fact": "display.hz", "op": "gte", "value": 100 }
+    ],
+    "current": "Sim-Limit 0 · Sim-VSync aus · Treiber-VSync-Code {nvidia.msfs.verticalsync} — nichts begrenzt die Framerate",
+    "recommended": "Treiber-VSync „1/2 Bildwiederholrate“ → konstante {display.hz.half} FPS",
+    "reason": "Ohne Cap schwankt die Framerate mit der Szene — genau diese Schwankung ist als Ruckeln spürbar, nicht die absolute FPS-Zahl. Ein Treiber-Cap auf die halbe Bildwiederholrate ({display.hz} Hz ÷ 2 = {display.hz.half} FPS) liefert perfektes Frame-Pacing: jedes Bild steht exakt zwei Refreshes. Die klassische VSync-Latenz lässt sich mit „Latenzarmer Modus: Ultra“ + „Max. vorgerenderte Bilder: 1“ im Treiber weitgehend neutralisieren. Wichtig bei aktivem DLSS: Das Sim-VSync ist dann ohnehin ausgegraut — der Treiber ist der einzige Ort für diese Strategie.",
+    "applyHint": "Der Anwenden-Button setzt Treiber-VSync auf „1/2 Bildwiederholrate“. Ergänzend (manuell, NVIDIA App/Inspector): Latenzarmer Modus „Ultra“, Max. vorgerenderte Bilder 1, G-SYNC für MSFS aus. Effekt per A/B-Benchmark an den 1%-Lows messen.",
+    "action": { "type": "nvidia", "settingId": "0x00A879CF", "value": 845218372 },
+    "details": "Warum die halbe Bildwiederholrate statt eines FPS-Limiters? Ein Limiter (Sim oder Treiber) cappt zwar die Rate, synchronisiert aber nicht mit dem Monitor — Frames erscheinen minimal versetzt (Judder). VSync 1/2 koppelt hart an den Refresh: 120 Hz → alle 16,67 ms ein neues Bild, absolut gleichmäßig. Das Grundgesetz dahinter: Smooth ist, was die Monitor-Hz RESTLOS teilt — bei 120 Hz also 60, 40, 30, 24 FPS; 50 oder 45 FPS ruckeln dagegen trotz höherer Zahl, weil die Bildstandzeiten ungleich lang wären. Reicht der GPU-Headroom für {display.hz.half} FPS nicht in jeder Szene (Photogrammetrie, Regen, Airliner), ist „1/3 Bildwiederholrate“ ({display.hz.third} FPS) die ebenso saubere, deutlich genügsamere Stufe — etwas mehr Latenz, fürs Simfliegen meist irrelevant. Per Benchmark verifizieren, dass die 1%-Lows am Cap kleben. Diese Kette (Refresh-Bruchteil + ULL Ultra + 1 vorgerendertes Bild, G-SYNC aus) ist eine praxisbewährte Smoothness-Strategie für MSFS. ACHTUNG, häufiger Fehler: Refresh-Bruchteil NIE mit einem zusätzlichen, abweichenden FPS-Limiter kombinieren (z.B. VSync 1/2 bei 120 Hz + 40-FPS-Limiter) — der Limiter taktet dann am VSync-Raster vorbei und die Bildstandzeiten pendeln (17/33 ms im Wechsel = Judder). Immer nur EIN Taktgeber; der „Background Application“-Limiter im Treiber ist davon ausgenommen (wirkt nur bei Fenster im Hintergrund — sinnvoll zum Stromsparen beim Alt-Tab)."
+  },
+  {
+    "id": "konflikt-rbar-profil",
+    "category": "Konflikt",
+    "severity": "info",
+    "title": "rBAR im BIOS aktiv, aber im NVIDIA-Profil deaktiviert",
+    "conditions": [
+      { "fact": "gpu.rebar", "op": "eq", "value": "Aktiv" },
+      { "fact": "nvidia.msfs.0x000f00ba", "op": "exists" },
+      { "fact": "nvidia.msfs.0x000f00ba", "op": "eq", "value": 0 }
+    ],
+    "current": "BIOS/BAR1: Aktiv · MSFS-Profil rBAR-Enable: 0",
+    "recommended": "rBAR-Enable im Profil auf 1",
+    "reason": "Resizable BAR ist auf Systemebene aktiv, aber das MSFS-Treiberprofil schaltet es für den Sim wieder ab — der Streaming-Vorteil geht damit verloren.",
+    "applyHint": "NVIDIA-Seite → „Resizable BAR (rBAR – Enable)“ → Ein.",
+    "action": { "type": "nvidia", "settingId": "0x000F00BA", "value": 1 }
+  },
+  {
+    "id": "konflikt-multifg-ohne-rtx50",
+    "category": "Konflikt",
+    "severity": "medium",
+    "title": "Multi-Frame-Generation ohne RTX-50-Karte konfiguriert",
+    "conditions": [
+      { "fact": "msfs.cfg.video.nbframestogenerate", "op": "gt", "value": 1 },
+      { "fact": "gpu.rtxseries", "op": "exists" },
+      { "fact": "gpu.rtxseries", "op": "lt", "value": 50 }
+    ],
+    "current": "Multiplikator {msfs.cfg.video.nbframestogenerate} auf {gpu.name}",
+    "recommended": "1 (2X)",
+    "reason": "Mehr als ein generiertes Zwischenbild (3X/4X) beherrscht erst Multi-Frame-Generation der RTX-50-Serie. Auf älteren Karten wird der Wert ignoriert oder Frame Generation fällt ganz aus.",
+    "applyHint": "MSFS-Seite → „Framerate-Multiplikator“ → 1.",
+    "action": { "type": "msfs", "section": "Video", "key": "NBFramesToGenerate", "value": "1" }
+  },
+  {
+    "id": "addons-icao-overlap",
+    "category": "Konflikt",
+    "severity": "medium",
+    "title": "Mehrere Sceneries bedienen denselben Airport",
+    "conditions": [ { "fact": "addons.icaoconflicts", "op": "gt", "value": 0 } ],
+    "current": "{addons.icaoconflicts} Airport(s) mit Mehrfach-Abdeckung",
+    "recommended": "Pro Airport nur eine Scenery aktiv lassen",
+    "reason": "Überlappende Airport-Sceneries verursachen Doppel-Gebäude, Z-Fighting, doppelte Parkpositionen und unnötige Performance-Kosten. Die betroffenen ICAOs stehen auf der Add-ons-Seite (heuristische Erkennung über BGL-Dateinamen und Titel).",
+    "applyHint": "Add-ons-Seite → Gruppe „Airport-Konflikte“ prüfen; überzählige Scenery deinstallieren oder per Addon-Linker deaktivieren."
+  },
+  {
+    "id": "addons-issues-found",
+    "category": "Add-ons",
+    "severity": "info",
+    "title": "Mögliche Add-on-Konflikte gefunden",
+    "conditions": [ { "fact": "addons.issues", "op": "gt", "value": 0 } ],
+    "current": "{addons.issues} Auffälligkeit(en)",
+    "recommended": "Add-ons-Seite prüfen",
+    "reason": "Überdeckte Official-Pakete oder Duplikate können Performance- und Darstellungsprobleme verursachen.",
+    "applyHint": "Siehe Seite „Add-ons“ — dort sind die betroffenen Pakete gelistet."
+  },
+  {
+    "id": "addons-many",
+    "category": "Add-ons",
+    "severity": "info",
+    "title": "Große Add-on-Bibliothek ({addons.count} Pakete)",
+    "conditions": [ { "fact": "addons.count", "op": "gte", "value": 50 } ],
+    "current": "{addons.count} Community-Pakete aktiv",
+    "recommended": "Für Performance-Tests temporär ausdünnen",
+    "reason": "Jedes aktive Paket verlängert Lade-/Menüzeiten; WASM-Module und Traffic-Tools kosten auch im Flug Leistung. Für aussagekräftige Benchmarks (Stufe 2) lohnt ein Lauf mit minimaler Add-on-Menge.",
+    "applyHint": "Add-ons z.B. mit einem Addon-Linker verwalten statt dauerhaft alle im Community-Ordner zu halten."
+  }
+]
